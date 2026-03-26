@@ -4,7 +4,7 @@ import { IoCopy } from "react-icons/io5";
 import Editor from "@monaco-editor/react";
 import { RiResetRightLine } from "react-icons/ri";
 
-import { LANGUAGE, BOILERCODE } from "../constants";
+import { LANGUAGE,BOILERCODE } from "../../../constants";
 
 const CodingInterface = () => {
   const [language, setLanguage] = useState("cpp");
@@ -61,7 +61,7 @@ const CodingInterface = () => {
                   setCode(BOILERCODE[newLang])
                 }}>
                     {LANGUAGE.map((lang)=>(
-                      <option key={lang.name} value={lang.name} >{lang.name} {lang.version}</option>
+                      <option key={lang.name} value={lang.name} >{lang.value}</option>
                     ))}
                 </select>
 

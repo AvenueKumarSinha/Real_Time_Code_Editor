@@ -3,6 +3,8 @@ import cors from "cors"
 import dotenv from "dotenv"
 import http from "http"
 import {Server} from "socket.io"
+import axios from "axios"
+import e from "express"
 
 dotenv.config()
 
@@ -27,6 +29,47 @@ io.on("connection",(socket)=>{
     socket.on("disconnect",()=>{
         console.log(`User disconnected: ${socket.id}`)
     })
+})
+
+app.post("/run",async(req,res)=>{
+    const {code,language,input}=req.body;
+    try{
+        const submission=await axios.post(
+            "https://ce.judge0.com/submissions?base64_encoded=false&wait=false",
+            {
+                source_code:code,
+                language_id:language,
+                stdin:input
+            }
+        )
+
+        const token=submission.data.token;
+
+        let result;
+        while(true){
+            const res2=await axios.get(
+                `https://ce.judge0.com/submissions/${token}?base64_encoded=false`
+            )
+
+            if(res2.data.status.id<=2){
+                //still processing
+                await new Promise(r=>setTimeout(r,1000))
+            }else{
+                result=res2.data;
+                break;
+            }
+        }
+
+        res.json({
+            output:result.stdout || "",
+            error:result.stderr || "",
+            compile_error: result.compile_output || "",
+            status: result.status.description
+        });
+    }catch(err){
+        console.log(err.response?.data);
+        res.status(500).json({error:err.message})
+    }
 })
 
 const PORT=process.env.PORT || 5000
