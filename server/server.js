@@ -23,13 +23,33 @@ const io=new Server(server,{
     }
 })
 
+const roomState = {}; // { roomId: { code, language } }
+
 io.on("connection",(socket)=>{
     console.log(`User connected: ${socket.id}`)
     
     socket.on("disconnect",()=>{
         console.log(`User disconnected: ${socket.id}`)
     })
+
+    socket.on("join-room",(room)=>{
+        socket.join(room)
+        if(roomState[room]) 
+            socket.emit("sync-state",roomState[room]);
+    })
+    
+    socket.on("send-code",({room,code})=>{
+        if(!roomState[room]) roomState[room]={};
+            roomState[room].code=code;
+            socket.to(room).emit("receive-code",code);
+    })
+
+    socket.on("change-language",({room,language,code})=>{
+        roomState[room]={language,code};
+        socket.to(room).emit("sync-state",{language,code});
+    })
 })
+
 
 app.post("/run",async(req,res)=>{
     const {code,language,input}=req.body;

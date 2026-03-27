@@ -1,8 +1,12 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+
+import { socket } from "../socket";
 
 const HomePage = () => {
+  const navigate=useNavigate()
+
   const {
     register,
     handleSubmit,
@@ -13,9 +17,13 @@ const HomePage = () => {
   const onSubmit = (data) => {
     if(createRoom){
         console.log(data.username)
-    }else{
+        const room=Math.floor(Math.random()*(999999999-100000000))+100000000;
+        console.log("Room id: ",room);
+        navigate(`code?room=${room}&username=${data.username}`)
+      }else{
         console.log(data.username)
         console.log(data.room)
+        navigate(`code?room=${Number(data.room)}&username=${data.username}`)
     }
   };
 
@@ -51,6 +59,7 @@ const HomePage = () => {
                 <p className="font-bold text-xl" >OR</p>
                 <button
                 disabled={isSubmitting}
+                type="button"
                 className="bg-lime-500 shadow-lg shadow-lime-500/50 hover:bg-lime-600 w-[30%] h-[7%] rounded-[10px] text-white font-bold"
                 onClick={()=>{setCreateRoom(false)}}
                 >
@@ -77,6 +86,7 @@ const HomePage = () => {
                 <p className="font-bold text-xl" >OR</p>
                 <button
                 disabled={isSubmitting}
+                type="button"
                 className="bg-cyan-500 shadow-lg shadow-cyan-500/50 hover:bg-cyan-600 w-[30%] h-[7%] rounded-[10px] text-white font-bold"
                 onClick={()=>{setCreateRoom(true)}}
                 >
