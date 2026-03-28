@@ -6,6 +6,8 @@ import {Server} from "socket.io"
 import axios from "axios"
 import e from "express"
 
+import { LANGUAGE_ID } from "../constants.js"
+
 dotenv.config()
 
 const app=express()
@@ -38,9 +40,10 @@ io.on("connection",(socket)=>{
             socket.emit("sync-state",roomState[room]);
     })
     
-    socket.on("send-code",({room,code})=>{
+    socket.on("send-code",({room,code,language})=>{
         if(!roomState[room]) roomState[room]={};
             roomState[room].code=code;
+            roomState[room].language=language;
             socket.to(room).emit("receive-code",code);
     })
 
@@ -50,16 +53,24 @@ io.on("connection",(socket)=>{
     })
 })
 
+const encode=(str)=>{
+    return Buffer.from(str).toString("base64");
+}
+
+const decode=(str)=>{
+    return str?Buffer.from(str,"base64").toString("utf-8"):"";
+}
 
 app.post("/run",async(req,res)=>{
     const {code,language,input}=req.body;
     try{
+        console.log("Code:\n",code);
         const submission=await axios.post(
-            "https://ce.judge0.com/submissions?base64_encoded=false&wait=false",
+            "https://ce.judge0.com/submissions?base64_encoded=true&wait=false",
             {
-                source_code:code,
-                language_id:language,
-                stdin:input
+                source_code:encode(code),
+                language_id: Number(LANGUAGE_ID[language]),
+                stdin:encode(input || "")
             }
         )
 
@@ -68,7 +79,7 @@ app.post("/run",async(req,res)=>{
         let result;
         while(true){
             const res2=await axios.get(
-                `https://ce.judge0.com/submissions/${token}?base64_encoded=false`
+                `https://ce.judge0.com/submissions/${token}?base64_encoded=true`
             )
 
             if(res2.data.status.id<=2){
@@ -80,10 +91,12 @@ app.post("/run",async(req,res)=>{
             }
         }
 
+        console.log(result)
+
         res.json({
-            output:result.stdout || "",
-            error:result.stderr || "",
-            compile_error: result.compile_output || "",
+            output:decode(result.stdout),
+            error:decode(result.stderr),
+            compile_error: decode(result.compile_output),
             status: result.status.description
         });
     }catch(err){
