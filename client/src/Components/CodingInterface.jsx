@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { FaPlay } from "react-icons/fa";
 import { IoCopy } from "react-icons/io5";
 import Editor from "@monaco-editor/react";
-import { RiResetRightLine } from "react-icons/ri";
+import { FaArrowRotateRight } from "react-icons/fa6";
 import { GiCancel } from "react-icons/gi";
+import { MdLightMode } from "react-icons/md";
+import { MdDarkMode } from "react-icons/md";
 
 import { LANGUAGE,BOILERCODE } from "../../../constants";
 import { useSearchParams } from "react-router-dom";
@@ -27,6 +29,7 @@ const CodingInterface = () => {
   const [lastOutputCode,setLastOutputCode]=useState("")
   const [seeOutputCode,setSeeOutputCode]=useState(false)
   const [users,setUsers]=useState([])
+  const [dark,setDark]=useState(false)
 
   useEffect(()=>{
     socket.on("users-update",(userlist)=>{
@@ -125,37 +128,53 @@ useEffect(() => {
     }
   }
 
+  const theme={
+    background: dark?"bg-[#000000]" : "bg-gray-100",
+    background2:dark?"bg-[#373740]" : "bg-gray-200",
+    text: dark?"text-white" : "text-black",
+    border: dark?"border-gray-300" : "border-gray-400",
+    icon_text:dark?"text-gray-200" : "text-gray-500",
+    icon_hover:dark?"hover:bg-[#2d2d35]" : "hover:bg-gray-300",
+    // io: dark?"bg-gray-800 text-white border-gray-600" : "bg-gray-200 text-black border-gray-300",
+  };
 
   return (
-    <div className="bg-red-500 h-screen w-screen flex flex-col gap-[2vh] justify-center">
+    <div className={`${theme.background} h-screen w-screen flex flex-col gap-[2vh] justify-center`}>
 
-      <header className="bg-blue-200 w-[95vw] h-[5vh] m-auto flex justify-around">
-        <p className="bg-red-100 py-[1.25vh]">
-          Username: <b>{username}</b>
-        </p>
-        <p className="bg-red-100 py-[1.25vh]">
-          Room Id: <b>{room}</b>
-        </p>
-        <button className="bg-pink-100 text-cyan-700" onClick={async()=>{
-          try{
-            await navigator.clipboard.writeText(room)
-            console.log("Code Copied To clipboard")
-          }catch{
-            console.log("Copy Failed")
-          }
-        }} >
-          <IoCopy size={"4vh"} />
-        </button>
-        <button className="bg-blue-100 text-lime-700" onClick={()=>handleRun()} >
-          <FaPlay size={"4vh"}/>
-        </button>
-        
+      <header className={`${theme.background2} border-b ${theme.border} w-[95vw] h-[5vh] m-auto flex justify-around relative`}>
+        <div className="flex gap-[25%] h-[100%] w-[50%] absolute left-[0.2%]" >  
+          <p className={` ${theme.text} py-[1.25vh] w-[50%] `}>
+            Username: <b>{username}</b>
+          </p>
+          <p className={`${theme.text} py-[1.25vh]`}>
+            Room Id: <b>{room}</b>
+          </p>
+        </div>
+
+        <div className="flex h-[100%] w-fit gap-[5%] absolute right-[0%]" >
+          <button className={`${theme.icon_hover} ${theme.icon_text} ${theme.icon_hover}`} onClick={async()=>{
+            try{
+              await navigator.clipboard.writeText(room)
+              console.log("Code Copied To clipboard")
+            }catch{
+              console.log("Copy Failed")
+            }
+          }} >
+            <IoCopy size={"90%"} />
+          </button>
+          
+          <button type="button" 
+            onClick={()=>setDark(!dark)} 
+            className={`${theme.icon_hover} ${dark?"text-white":"text-yellow-500"}`} >
+            {dark?<MdDarkMode size={"90%"} color="" />:<MdLightMode size={"90%"} color="" />}
+          </button>
+        </div>
       </header>
 
 
-      <section className="bg-green-200 w-[95vw] h-[85vh] m-auto flex gap-[5%]">
+      <section className="w-[95vw] h-[85vh] m-auto flex gap-[5%]">
         
-        <div className="bg-pink-200 h-[100%] w-[10%] text-center">
+        <div className={`${theme.text} ${theme.background2} h-[100%] w-[10%] text-center overflow-auto `}>
           <h5 className="font-bold">Current Users</h5>
           <ul className="">
             {users.map((user)=>{
@@ -167,9 +186,9 @@ useEffect(() => {
         </div>
 
 
-        <main className="bg-yellow-500 h-[100%] w-[85%]">
+        <main className="h-[100%] w-[85%]">
 
-            <div className="bg-blue-800 h-[5%] w-[100%] flex justify-between" >
+            <div className={`${theme.background2} h-[5%] w-[100%] flex justify-between relative `} >
                 <select className="" value={language} onChange={(e)=>{
                   const newLang=e.target.value;
                   handleLanguage(newLang)
@@ -179,21 +198,26 @@ useEffect(() => {
                     ))}
                 </select>
 
-                <button className="bg-pink-100 text-cyan-700" onClick={async()=>{
-                  try{
-                    await navigator.clipboard.writeText(code)
-                    console.log("Code Copied To clipboard")
-                  }catch{
-                    console.log("Copy Failed")
-                  }
-                }} >
-                  <IoCopy size={"4vh"} />
-                </button>
-                <button className="bg-green-800" onClick={()=>handleChange(BOILERCODE[language])} ><RiResetRightLine size={'90%'} /></button>
+                <div className="flex gap-[5%] h-[100%] w-fit absolute right-[0%]" >
+                  <button className={`${theme.icon_hover} ${theme.icon_text}`} onClick={async()=>{
+                    try{
+                      await navigator.clipboard.writeText(code)
+                      console.log("Code Copied To clipboard")
+                    }catch{
+                      console.log("Copy Failed")
+                    }
+                  }} >
+                    <IoCopy size={"90%"} />
+                  </button>
+                  <button className={`${theme.icon_hover} ${theme.icon_text}`} onClick={()=>handleRun()} >
+                    <FaPlay size={"90%"}/>
+                  </button>
+                  <button className={`${theme.icon_hover} ${theme.icon_text}`} onClick={()=>handleChange(BOILERCODE[language])} ><FaArrowRotateRight size={'90%'} /></button>
+                </div>
             </div>
 
           {seeOutputCode && 
-            <div className="bg-cyan-800 h-[55%] w-[100%] relative" >
+            <div className={`${theme.background} ${theme.text} border ${theme.border} h-[55%] w-[100%] relative overflow-auto `} >
               <button type="button" onClick={()=>setSeeOutputCode(false)} className="text-red-600 absolute right-[0.5%] top-[2%]" ><GiCancel size={30} /></button>
               <pre className="p-[1%]" >{lastOutputCode}</pre>
             </div>
@@ -217,24 +241,24 @@ useEffect(() => {
             />
           }
 
-            <div className="bg-blue-500 h-[40%] w-[100%] flex" >
-              <div className="bg-red-700 h-[100%] w-[50%] p-2" >
+            <div className="h-[40%] w-[100%] flex" >
+              <div className={`${theme.background2} ${theme.text} border-r border-t ${theme.border} h-[100%] w-[50%] p-2`} >
                 <h5 className="text-center font-bold" >INPUT</h5>
                 <textarea 
                 value={input}
                 onChange={(e)=>{setInput(e.target.value)}}
                 placeholder="Please give input here."
-                className="h-[90%] w-[100%] bg-transparent text-black placeholder-gray-400 border border-gray-600 rounded-lg p-2 outline-none resize-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 font-mono text-sm" 
+                className={`h-[90%] w-[100%] bg-transparent ${theme.text} placeholder-gray-400 border ${theme.border} rounded-lg p-2 outline-none resize-none `} 
                 >
 
                 </textarea>
               </div>
 
-              <div className="bg-green-700 h-[100%] w-[50%] p-2 relative" >
+              <div className={`${theme.background2} ${theme.text} border-t ${theme.border} h-[100%] w-[50%] p-2 relative`} >
                 <h5 className="text-center font-bold" >OUTPUT</h5>
-                {!error && <pre>{output}</pre>} 
-                {error && <pre className="text-red-500" >{output}</pre>}
-                <button type="button" onClick={()=>setSeeOutputCode(true)} className="bg-cyan-500 absolute right-[2%] bottom-[5%]" >See Code</button>
+                {!error && <pre className={` overflow-auto h-[85%]` }>{output}</pre>} 
+                {error && <pre className={`text-red-500 overflow-auto h-[85%]`} >{output}</pre>}
+                <button type="button" onClick={()=>setSeeOutputCode(true)} className={`${theme.icon_text} ${!dark?theme.icon_hover:"hover:bg-gray-500"} absolute right-[2%] bottom-[2%]`} >See Code</button>
               </div>
             </div>
 
