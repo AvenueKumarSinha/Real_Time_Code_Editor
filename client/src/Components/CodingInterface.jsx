@@ -26,13 +26,22 @@ const CodingInterface = () => {
   const [error,setError]=useState(false)
   const [lastOutputCode,setLastOutputCode]=useState("")
   const [seeOutputCode,setSeeOutputCode]=useState(false)
+  const [users,setUsers]=useState([])
+
+  useEffect(()=>{
+    socket.on("users-update",(userlist)=>{
+      setUsers(userlist)
+    })
+
+    return ()=>socket.off("users-update");
+  },[])
 
 useEffect(() => {
   if (!room) return;
 
   const joinRoom=()=>{
     console.log("Joining room:", room);
-    socket.emit("join-room", room);
+    socket.emit("join-room", {room,username});
   };
 
   if (socket.connected){
@@ -149,11 +158,11 @@ useEffect(() => {
         <div className="bg-pink-200 h-[100%] w-[10%] text-center">
           <h5 className="font-bold">Current Users</h5>
           <ul className="">
-            <li className="my-[5%]">User1</li>
-            <li className="my-[5%]">User1</li>
-            <li className="my-[5%]">User1</li>
-            <li className="my-[5%]">User1</li>
-            <li className="my-[5%]">User1</li>
+            {users.map((user)=>{
+              return (
+                <li className="my-[5%]" key={user.socketId} >{user.username}</li>
+              );
+            })}
           </ul>
         </div>
 
@@ -186,7 +195,7 @@ useEffect(() => {
           {seeOutputCode && 
             <div className="bg-cyan-800 h-[55%] w-[100%] relative" >
               <button type="button" onClick={()=>setSeeOutputCode(false)} className="text-red-600 absolute right-[0.5%] top-[2%]" ><GiCancel size={30} /></button>
-              <pre>{lastOutputCode}</pre>
+              <pre className="p-[1%]" >{lastOutputCode}</pre>
             </div>
           }
 

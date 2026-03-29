@@ -49,22 +49,29 @@ const HomePage = () => {
 
             {createRoom && 
                 <>
-                <button
-                disabled={isSubmitting}
-                type="submit"
-                className="bg-cyan-500 shadow-lg shadow-cyan-500/50 hover:bg-cyan-600 w-[30%] h-[7%] rounded-[10px] text-white font-bold"
-                >
-                Create Room
-                </button>
-                <p className="font-bold text-xl" >OR</p>
-                <button
-                disabled={isSubmitting}
-                type="button"
-                className="bg-lime-500 shadow-lg shadow-lime-500/50 hover:bg-lime-600 w-[30%] h-[7%] rounded-[10px] text-white font-bold"
-                onClick={()=>{setCreateRoom(false)}}
-                >
-                Join Room
-                </button>
+                  <input
+                  {...register("room")}
+                  type="text"
+                  placeholder="Please enter your room id"
+                  className="home_input invisible"
+                  disabled
+                  />
+                  <button
+                  disabled={isSubmitting}
+                  type="submit"
+                  className="bg-cyan-500 shadow-lg shadow-cyan-500/50 hover:bg-cyan-600 w-[30%] h-[7%] rounded-[10px] text-white font-bold"
+                  >
+                  Create Room
+                  </button>
+                  <p className="font-bold text-xl" >OR</p>
+                  <button
+                  disabled={isSubmitting}
+                  type="button"
+                  className="bg-lime-500 shadow-lg shadow-lime-500/50 hover:bg-lime-600 w-[30%] h-[7%] rounded-[10px] text-white font-bold"
+                  onClick={()=>{setCreateRoom(false)}}
+                  >
+                  Join Room
+                  </button>
                 </>
             }
 

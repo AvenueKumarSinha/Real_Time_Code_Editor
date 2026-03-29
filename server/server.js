@@ -26,16 +26,39 @@ const io=new Server(server,{
 })
 
 const roomState = {}; // { roomId: { code, language } }
+const rooms={}; // {rooms1:[{socketID,username}]}
+const socketToRoom = {};
 
 io.on("connection",(socket)=>{
     console.log(`User connected: ${socket.id}`)
     
     socket.on("disconnect",()=>{
         console.log(`User disconnected: ${socket.id}`)
+
+        const room = socketToRoom[socket.id];
+        if(!room) return;
+
+        rooms[room]=rooms[room].filter(
+            (user)=>user.socketId !==socket.id
+        );
+        delete socketToRoom[socket.id];
+
+        if(rooms[room].length===0) delete rooms[room];
+        else io.to(room).emit("users-update",rooms[room])
     })
 
-    socket.on("join-room",(room)=>{
+    socket.on("join-room",({room,username})=>{
         socket.join(room)
+        
+        socketToRoom[socket.id] = room;
+        if(!rooms[room]) rooms[room]=[]
+        rooms[room].push({
+            socketId:socket.id,
+            username
+        })
+
+        io.to(room).emit("users-update",rooms[room])
+
         if(roomState[room]) 
             socket.emit("sync-state",roomState[room]);
     })
