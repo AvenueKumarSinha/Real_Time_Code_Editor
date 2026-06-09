@@ -7,6 +7,9 @@ import CodingInterface from './Components/CodingInterface'
 import { useEffect } from 'react'
 import { socket } from './socket'
 
+import {ToastContainer} from "react-toastify"
+import "react-toastify/ReactToastify.css"
+
 function App() {
   useEffect(()=>{
     socket.connect();
@@ -29,7 +32,8 @@ function App() {
 
   return (
     <>
-      <RouterProvider router={router}/>
+        <ToastContainer position='top-center' newestOnTop />
+        <RouterProvider router={router}/>
     </>
   )
 }

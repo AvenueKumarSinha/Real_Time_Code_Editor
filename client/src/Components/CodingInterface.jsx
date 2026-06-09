@@ -13,6 +13,11 @@ import { socket } from "../socket";
 import { useRef } from "react";
 import { useEffect } from "react";
 
+import Loader from "./Loader";
+import { toast } from "react-toastify";
+
+import { NavLink,useNavigate } from "react-router-dom";
+
 const CodingInterface = () => {
   const [language, setLanguage] = useState("cpp");
   const [code, setCode] = useState(BOILERCODE[language]);
@@ -30,6 +35,10 @@ const CodingInterface = () => {
   const [seeOutputCode,setSeeOutputCode]=useState(false)
   const [users,setUsers]=useState([])
   const [dark,setDark]=useState(false)
+  const [running,setRunning]=useState(false)
+  const [reset,setReset]=useState(false)
+
+  const navigate=useNavigate();
 
   useEffect(()=>{
     socket.on("users-update",(userlist)=>{
@@ -39,11 +48,40 @@ const CodingInterface = () => {
     return ()=>socket.off("users-update");
   },[])
 
+  useEffect(()=>{
+    socket.on("user-connected",(userConn)=>{
+      if(userConn!==username)
+        toast.info(`${userConn} joined the room`)
+    })
+
+    return ()=>socket.off("user-connected");
+  },[])
+
+  useEffect(()=>{
+    socket.on("user-disconnected",(userDis)=>{
+      if(userDis!==username)
+        toast.info(`${userDis} left the room`)
+    })
+
+    return ()=>socket.off("user-disconnected");
+  },[])
+
+  useEffect(() => {
+    socket.on("duplicate-username", () => {
+        toast.error("Username already exists in this room");
+        navigate("/");
+    });
+
+    return () => {
+        socket.off("duplicate-username");
+    };
+  }, []);
+
 useEffect(() => {
   if (!room) return;
 
   const joinRoom=()=>{
-    console.log("Joining room:", room);
+    toast.success(`Joined Room: ${room}`);
     socket.emit("join-room", {room,username});
   };
 
@@ -88,6 +126,19 @@ useEffect(() => {
     setCode(value);
     socket.emit('send-code',{room,code:value,language});
   };
+  
+  const handleReset=(value)=>{
+    if(!confirm(`Are you sure, you want to reset the code?`)) return;
+
+    if(isRemote.current){
+      isRemote.current=false;
+      return;
+    }
+  
+    setCode(value);
+    socket.emit('send-code',{room,code:value,language});
+    toast.success("Your code has been reset.");
+  }
 
   const handleLanguage=(value)=>{
     if(isRemote.current){
@@ -103,6 +154,7 @@ useEffect(() => {
 
   const handleRun=async ()=>{
     try{
+      setRunning(true);
       setLastOutputCode(code);
       const res= await fetch(`${import.meta.env.VITE_SERVER_URL}/run`,{
         method:"POST",
@@ -114,7 +166,6 @@ useEffect(() => {
 
       const result=await res.json();
 
-      console.log(result)
       if(result.status==="Accepted"){
         setOutput(result.output)
         setError(false)
@@ -125,6 +176,8 @@ useEffect(() => {
       }
     }catch(err){
 
+    }finally{
+      setRunning(false);
     }
   }
 
@@ -155,9 +208,9 @@ useEffect(() => {
           <button className={`${theme.icon_hover} ${theme.icon_text} ${theme.icon_hover}`} onClick={async()=>{
             try{
               await navigator.clipboard.writeText(room)
-              console.log("Code Copied To clipboard")
+              toast.success("Room Id Copied To clipboard")
             }catch{
-              console.log("Copy Failed")
+              toast.error("Copy Failed")
             }
           }} >
             <IoCopy size={"90%"} />
@@ -188,8 +241,8 @@ useEffect(() => {
 
         <main className="h-[100%] w-[85%]">
 
-            <div className={`${theme.background2} h-[5%] w-[100%] flex justify-between relative `} >
-                <select className="" value={language} onChange={(e)=>{
+            <div className={`${theme.background2} h-[5%] w-[100%] flex justify-between relative ` } >
+                <select className="cursor-pointer" value={language} onChange={(e)=>{
                   const newLang=e.target.value;
                   handleLanguage(newLang)
                 }}>
@@ -202,28 +255,33 @@ useEffect(() => {
                   <button className={`${theme.icon_hover} ${theme.icon_text}`} onClick={async()=>{
                     try{
                       await navigator.clipboard.writeText(code)
-                      console.log("Code Copied To clipboard")
+                      toast.success("Code Copied To clipboard")
                     }catch{
-                      console.log("Copy Failed")
+                      toast.error("Copy Failed")
                     }
                   }} >
                     <IoCopy size={"90%"} />
                   </button>
-                  <button className={`${theme.icon_hover} ${theme.icon_text}`} onClick={()=>handleRun()} >
-                    <FaPlay size={"90%"}/>
-                  </button>
-                  <button className={`${theme.icon_hover} ${theme.icon_text}`} onClick={()=>handleChange(BOILERCODE[language])} ><FaArrowRotateRight size={'90%'} /></button>
+                  {!running && 
+                    <button className={`${theme.icon_hover} ${theme.icon_text}`} onClick={()=>handleRun()} >
+                      <FaPlay size={"90%"}/>
+                    </button>
+                  }
+                  {running &&
+                   <Loader size="h-[80%]" color={!dark?`border-t-gray-400`:`border-t-white`} backgroundColor={!dark?`border-gray-300`:`border-gray-500`} />
+                  }
+                  <button className={`${theme.icon_hover} ${theme.icon_text}`} onClick={()=>handleReset(BOILERCODE[language])} ><FaArrowRotateRight size={'90%'} /></button>
                 </div>
             </div>
 
           {seeOutputCode && 
             <div className={`${theme.background} ${theme.text} border ${theme.border} h-[55%] w-[100%] relative overflow-auto `} >
-              <button type="button" onClick={()=>setSeeOutputCode(false)} className="text-red-600 absolute right-[0.5%] top-[2%]" ><GiCancel size={30} /></button>
+              <button type="button" onClick={()=>setSeeOutputCode(false)} className={`${theme.icon_text} ${theme.icon_hover} absolute right-[0.5%] top-[2%]`} ><GiCancel size={30} /></button>
               <pre className="p-[1%]" >{lastOutputCode}</pre>
             </div>
           }
 
-          {!seeOutputCode &&      
+          {!seeOutputCode &&     
             <Editor
               height={"55%"}
               width={"100%"}

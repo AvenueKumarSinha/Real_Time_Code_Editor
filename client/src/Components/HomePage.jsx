@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { NavLink, useNavigate } from "react-router-dom";
 
 import { socket } from "../socket";
+import { toast } from "react-toastify";
 
 const HomePage = () => {
   const navigate=useNavigate()
@@ -14,15 +15,25 @@ const HomePage = () => {
     formState: { errors, isSubmitting },
   } = useForm();
 
-  const onSubmit = (data) => {
+  const onSubmit = async(data) => {
     if(createRoom){
-        console.log(data.username)
         const room=Math.floor(Math.random()*(999999999-100000000))+100000000;
-        console.log("Room id: ",room);
         navigate(`code?room=${room}&username=${data.username}`)
       }else{
-        console.log(data.username)
-        console.log(data.room)
+        const res=await fetch(`${import.meta.env.VITE_SERVER_URL}/checkDuplicateUsername`,{
+          method:"POST",
+          headers:{
+            "Content-type":"application/json"
+          },
+          body: JSON.stringify({room:data.room,username:data.username})
+        })
+
+        const result=await res.json();
+        if(result.duplicate==="true"){
+          toast.error(`Username already exists in this room`);
+          return;
+        }
+
         navigate(`code?room=${Number(data.room)}&username=${data.username}`)
     }
   };
