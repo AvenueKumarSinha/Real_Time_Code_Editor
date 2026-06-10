@@ -41,21 +41,31 @@ const HomePage = () => {
   const[createRoom,setCreateRoom]=useState(false)
 
   return (
-    <div className="bg-[rgb(242,242,242)] h-screen w-screen flex flex-col">
-      <div className="m-auto flex flex-col gap-[1vh]" >
-        <h1 className="m-auto text-5xl font-bold">Real Time Code Editor</h1>
-        <h5 className="m-auto text-2xl">Collaborate. Code. Execute.</h5>
+    <div className="bg-slate-50 h-screen w-screen flex flex-col">
+      <div className="mt-20 flex flex-col items-center gap-3" >
+        <h1 className="text-6xl font-extrabold text-slate-900">Real Time Code Editor</h1>
+        <h5 className="text-xl text-slate-500 font-medium">Collaborate. Code. Execute.</h5>
       </div>
 
         <form
             onSubmit={handleSubmit(onSubmit)}
-            className="bg-[rgb(238,238,238)] shadow-(color:rgb(238,238,238)) shadow-md h-3/4 w-3/4 m-auto flex flex-col justify-center items-center gap-[5vh] rounded-[15px]"
+            className="bg-white shadow-xl border border-slate-200 w-[500px] max-w-[90vw] p-10 rounded-2xl mx-auto my-auto flex flex-col justify-center items-center gap-6"
         >
+            <div className="text-center mb-2">
+              <h2 className="text-2xl font-bold text-slate-900">
+                {createRoom ? "Create a Room" : "Join a Room"}
+              </h2>
+
+              <p className="text-slate-500 mt-1">
+                Start collaborating instantly
+              </p>
+            </div>
+
             <input
             {...register("username")}
             type="text"
             placeholder="Please enter your username"
-            className="home_input"
+            className="w-full h-12 px-4 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
             />
 
             {createRoom && 
@@ -64,24 +74,34 @@ const HomePage = () => {
                   {...register("room")}
                   type="text"
                   placeholder="Please enter your room id"
-                  className="home_input invisible"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition invisible"
                   disabled
                   />
                   <button
                   disabled={isSubmitting}
                   type="submit"
-                  className="bg-cyan-500 shadow-lg shadow-cyan-500/50 hover:bg-cyan-600 w-[30%] h-[7%] rounded-[10px] text-white font-bold"
+                  className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition"
                   >
-                  Create Room
+                  {isSubmitting ? "Creating..." : "Create Room"}
                   </button>
-                  <p className="font-bold text-xl" >OR</p>
+                  
+                  <div className="flex items-center w-full">
+                    <div className="flex-1 border-t border-slate-300"></div>
+
+                    <span className="px-3 text-slate-400 text-sm">
+                      OR
+                    </span>
+
+                    <div className="flex-1 border-t border-slate-300"></div>
+                  </div>
+
                   <button
                   disabled={isSubmitting}
                   type="button"
-                  className="bg-lime-500 shadow-lg shadow-lime-500/50 hover:bg-lime-600 w-[30%] h-[7%] rounded-[10px] text-white font-bold"
+                  className="w-full h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold transition"
                   onClick={()=>{setCreateRoom(false)}}
                   >
-                  Join Room
+                  {isSubmitting ? "Joining..." : "Join Room"}
                   </button>
                 </>
             }
@@ -92,26 +112,36 @@ const HomePage = () => {
                 {...register("room")}
                 type="text"
                 placeholder="Please enter your room id"
-                className="home_input"
+                className="w-full h-12 px-4 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
                 />
                 <button
                 disabled={isSubmitting}
                 type="submit"
-                className="bg-lime-500 shadow-lg shadow-lime-500/50 hover:bg-lime-600 w-[30%] h-[7%] rounded-[10px] text-white font-bold"
+                className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition"
                 >
-                Join Room
+                {isSubmitting ? "Joining..." : "Join Room"}
                 </button>
-                <p className="font-bold text-xl" >OR</p>
+
+                <div className="flex items-center w-full">
+                  <div className="flex-1 border-t border-slate-300"></div>
+
+                  <span className="px-3 text-slate-400 text-sm">
+                    OR
+                  </span>
+
+                  <div className="flex-1 border-t border-slate-300"></div>
+                </div>
+
                 <button
                 disabled={isSubmitting}
                 type="button"
-                className="bg-cyan-500 shadow-lg shadow-cyan-500/50 hover:bg-cyan-600 w-[30%] h-[7%] rounded-[10px] text-white font-bold"
+                className="w-full h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold transition"
                 onClick={()=>{setCreateRoom(true)}}
                 >
-                Create Room
+                {isSubmitting ? "Creating..." : "Create Room"}
                 </button></>
             }
-            {/* Add Loader-> {isSubmitting && <Loader/>} */}
+            <p className="text-sm text-slate-400 text-center">Share room IDs to collaborate with others.</p>
         </form>
     </div>
   );

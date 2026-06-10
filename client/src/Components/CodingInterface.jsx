@@ -37,6 +37,7 @@ const CodingInterface = () => {
   const [dark,setDark]=useState(false)
   const [running,setRunning]=useState(false)
   const [reset,setReset]=useState(false)
+  const [noCode,setNoCode]=useState(true)
 
   const navigate=useNavigate();
 
@@ -174,6 +175,7 @@ useEffect(() => {
         setError(true)
         setOutput(result.compile_error)
       }
+      setNoCode(false);
     }catch(err){
 
     }finally{
@@ -182,53 +184,68 @@ useEffect(() => {
   }
 
   const theme={
-    background: dark?"bg-[#000000]" : "bg-gray-100",
-    background2:dark?"bg-[#373740]" : "bg-gray-200",
-    text: dark?"text-white" : "text-black",
-    border: dark?"border-gray-300" : "border-gray-400",
-    icon_text:dark?"text-gray-200" : "text-gray-500",
-    icon_hover:dark?"hover:bg-[#2d2d35]" : "hover:bg-gray-300",
-    // io: dark?"bg-gray-800 text-white border-gray-600" : "bg-gray-200 text-black border-gray-300",
+    background: dark ? "bg-slate-900" : "bg-slate-50",
+    background2: dark ? "bg-slate-800" : "bg-white",
+    text: dark ? "text-slate-100" : "text-slate-900",
+    border: dark ? "border-slate-600" : "border-slate-200",
+    icon_text: dark ? "text-slate-300" : "text-slate-500",
+    icon_hover: dark? "hover:bg-slate-700" : "hover:bg-slate-100",
+    shadow: dark? "shadow-lg shadow-black/20" : "shadow-md",
+    accent: dark? "text-blue-400" : "text-blue-600",
   };
 
   return (
-    <div className={`${theme.background} h-screen w-screen flex flex-col gap-[2vh] justify-center`}>
+    <div className={`${theme.background} min-h-screen w-full flex flex-col gap-4 px-4 py-3`}>
 
-      <header className={`${theme.background2} border-b ${theme.border} w-[95vw] h-[5vh] m-auto flex justify-around relative`}>
-        <div className="flex gap-[25%] h-[100%] w-[50%] absolute left-[0.2%]" >  
-          <p className={` ${theme.text} py-[1.25vh] w-[50%] `}>
+      <header className={`${theme.background2} ${theme.shadow} border ${theme.border} rounded-xl h-14 px-5 flex justify-between items-center`}>
+        <div className="flex gap-10 items-center" >  
+          <p className={` ${theme.text} font-medium `}>
             Username: <b>{username}</b>
           </p>
-          <p className={`${theme.text} py-[1.25vh]`}>
-            Room Id: <b>{room}</b>
-          </p>
+
+          <div className="flex items-center gap-2">
+            <p className={`${theme.text} font-medium`}>
+              Room Id: <b>{room}</b>
+            </p>
+
+            <button
+              className={`
+                ${theme.icon_hover}
+                ${theme.icon_text}
+                p-1.5
+                rounded-md
+              `}
+              onClick={async()=>{
+                try{
+                  await navigator.clipboard.writeText(room)
+                  toast.success("Room ID Copied")
+                }catch{
+                  toast.error("Copy Failed")
+                }
+              }}
+            >
+              <IoCopy size={18} />
+            </button>
+          </div>
         </div>
 
-        <div className="flex h-[100%] w-fit gap-[5%] absolute right-[0%]" >
-          <button className={`${theme.icon_hover} ${theme.icon_text} ${theme.icon_hover}`} onClick={async()=>{
-            try{
-              await navigator.clipboard.writeText(room)
-              toast.success("Room Id Copied To clipboard")
-            }catch{
-              toast.error("Copy Failed")
-            }
-          }} >
-            <IoCopy size={"90%"} />
-          </button>
-          
+        <div className="flex items-center gap-3" >
           <button type="button" 
             onClick={()=>setDark(!dark)} 
-            className={`${theme.icon_hover} ${dark?"text-white":"text-yellow-500"}`} >
-            {dark?<MdDarkMode size={"90%"} color="" />:<MdLightMode size={"90%"} color="" />}
+            className={`px-3 py-2 rounded-lg flex items-center gap-2 ${theme.icon_hover} ${theme.text}`} >
+            <>
+              {dark ? <MdDarkMode size={20} /> : <MdLightMode size={20} />}
+              <span>{dark ? "Dark" : "Light"}</span>
+            </>
           </button>
         </div>
       </header>
 
 
-      <section className="w-[95vw] h-[85vh] m-auto flex gap-[5%]">
+      <section className="w-full flex-1 flex gap-4 min-h-0">
         
-        <div className={`${theme.text} ${theme.background2} h-[100%] w-[10%] text-center overflow-auto `}>
-          <h5 className="font-bold">Current Users</h5>
+        <div className={`${theme.text} ${theme.background2} ${theme.shadow} rounded-xl p-3 flex flex-col w-[15%] overflow-auto `}>
+          <h5 className="font-bold text-lg mb-3"> Online Users ({users.length}) </h5>
           <ul className="">
             {users.map((user)=>{
               return (
@@ -239,10 +256,10 @@ useEffect(() => {
         </div>
 
 
-        <main className="h-[100%] w-[85%]">
+        <main className="flex-1 flex flex-col min-h-0">
 
-            <div className={`${theme.background2} h-[5%] w-[100%] flex justify-between relative ` } >
-                <select className="cursor-pointer" value={language} onChange={(e)=>{
+            <div className={`${theme.background2} ${theme.shadow} ${theme.text} rounded-t-xl px-4 h-14 flex items-center justify-between ` } >
+                <select className={`cursor-pointer px-3 py-2 rounded-lg border ${theme.background} ${theme.border} ${theme.text} bg-transparent`} value={language} onChange={(e)=>{
                   const newLang=e.target.value;
                   handleLanguage(newLang)
                 }}>
@@ -251,8 +268,8 @@ useEffect(() => {
                     ))}
                 </select>
 
-                <div className="flex gap-[5%] h-[100%] w-fit absolute right-[0%]" >
-                  <button className={`${theme.icon_hover} ${theme.icon_text}`} onClick={async()=>{
+                <div className="flex items-center gap-2" >
+                  <button className={`${theme.icon_text} ${theme.icon_hover} p-2 rounded-lg transition`} onClick={async()=>{
                     try{
                       await navigator.clipboard.writeText(code)
                       toast.success("Code Copied To clipboard")
@@ -260,32 +277,32 @@ useEffect(() => {
                       toast.error("Copy Failed")
                     }
                   }} >
-                    <IoCopy size={"90%"} />
+                    <IoCopy size={18} />
                   </button>
                   {!running && 
-                    <button className={`${theme.icon_hover} ${theme.icon_text}`} onClick={()=>handleRun()} >
-                      <FaPlay size={"90%"}/>
+                    <button className={`bg-green-500 hover:bg-green-600 text-white rounded-lg px-3 py-2 transition`} onClick={()=>handleRun()} >
+                      <FaPlay size={18} />
                     </button>
                   }
                   {running &&
-                   <Loader size="h-[80%]" color={!dark?`border-t-gray-400`:`border-t-white`} backgroundColor={!dark?`border-gray-300`:`border-gray-500`} />
+                   <Loader size="h-6 w-6" color={!dark?`border-t-gray-400`:`border-t-white`} backgroundColor={!dark?`border-gray-300`:`border-gray-500`} />
                   }
-                  <button className={`${theme.icon_hover} ${theme.icon_text}`} onClick={()=>handleReset(BOILERCODE[language])} ><FaArrowRotateRight size={'90%'} /></button>
+                  <button className={`bg-amber-500 hover:bg-amber-600 text-white rounded-lg px-3 py-2 transition`} onClick={()=>handleReset(BOILERCODE[language])} ><FaArrowRotateRight size={18} /></button>
                 </div>
             </div>
 
           {seeOutputCode && 
-            <div className={`${theme.background} ${theme.text} border ${theme.border} h-[55%] w-[100%] relative overflow-auto `} >
-              <button type="button" onClick={()=>setSeeOutputCode(false)} className={`${theme.icon_text} ${theme.icon_hover} absolute right-[0.5%] top-[2%]`} ><GiCancel size={30} /></button>
+            <div className={`${theme.background} ${theme.text} border ${theme.border} h-[70%] w-[100%] relative overflow-auto `} >
+              <button type="button" onClick={()=>setSeeOutputCode(false)} className={`${theme.icon_text} ${theme.icon_hover} absolute right-[0.5%] top-[2%]`} ><GiCancel size={18} /></button>
               <pre className="p-[1%]" >{lastOutputCode}</pre>
             </div>
           }
 
           {!seeOutputCode &&     
             <Editor
-              height={"55%"}
+              height={"70%"}
               width={"100%"}
-              theme="vs-dark"
+              theme={dark ? "vs-dark" : "light"}
               value={code}
               onChange={handleChange}
               language={language}
@@ -299,8 +316,8 @@ useEffect(() => {
             />
           }
 
-            <div className="h-[40%] w-[100%] flex" >
-              <div className={`${theme.background2} ${theme.text} border-r border-t ${theme.border} h-[100%] w-[50%] p-2`} >
+            <div className="h-[220px] w-full flex" >
+              <div className={`${theme.background2} ${theme.text} border ${theme.border} rounded-bl-xl p-3 h-full w-1/2`} >
                 <h5 className="text-center font-bold" >INPUT</h5>
                 <textarea 
                 value={input}
@@ -312,11 +329,19 @@ useEffect(() => {
                 </textarea>
               </div>
 
-              <div className={`${theme.background2} ${theme.text} border-t ${theme.border} h-[100%] w-[50%] p-2 relative`} >
-                <h5 className="text-center font-bold" >OUTPUT</h5>
-                {!error && <pre className={` overflow-auto h-[85%]` }>{output}</pre>} 
-                {error && <pre className={`text-red-500 overflow-auto h-[85%]`} >{output}</pre>}
-                <button type="button" onClick={()=>setSeeOutputCode(true)} className={`${theme.icon_text} ${!dark?theme.icon_hover:"hover:bg-gray-500"} absolute right-[2%] bottom-[2%]`} >See Code</button>
+              <div className={` ${theme.background2} ${theme.text} border ${theme.border} rounded-br-xl p-3 h-full w-1/2 relative flex flex-col min-h-0`} >
+                <div className="flex justify-between items-center mb-2">
+                <h5 className="font-bold">OUTPUT</h5>
+
+                <button type="button" onClick={()=>setSeeOutputCode(true)} className=" text-blue-500 hover:text-blue-600 text-sm font-medium">
+                  See Code
+                </button>
+              </div>
+                {!error && !noCode && (<p className="text-green-500 font-semibold mb-2">✓ Accepted</p>)}
+                {error && !noCode && (<p className="text-red-500 font-semibold mb-2">✗ Compilation Error</p>)}
+                {/* {!error && <pre className={` overflow-y-auto overflow-x-hidden flex-1 min-h-0 whitespace-pre-wrap break-words` }>{output}</pre>}  */}
+                {<pre className={` overflow-y-auto overflow-x-hidden flex-1 min-h-0 whitespace-pre-wrap break-words` }>{output}</pre>} 
+                {/* {error && <pre className={`text-red-500 overflow-y-auto overflow-x-hidden flex-1 min-h-0 whitespace-pre-wrap break-words`} >{output}</pre>} */}
               </div>
             </div>
 
