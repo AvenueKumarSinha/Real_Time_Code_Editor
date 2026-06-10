@@ -192,6 +192,7 @@ useEffect(() => {
     icon_hover: dark? "hover:bg-slate-700" : "hover:bg-slate-100",
     shadow: dark? "shadow-lg shadow-black/20" : "shadow-md",
     accent: dark? "text-blue-400" : "text-blue-600",
+    current_user_highlight: dark?"text-amber-300":"text-amber-600"
   };
 
   return (
@@ -249,7 +250,7 @@ useEffect(() => {
           <ul className="">
             {users.map((user)=>{
               return (
-                <li className="my-[5%]" key={user.socketId} >{user.username}</li>
+                <li className={`my-[5%] ${user.username===username?`${theme.current_user_highlight}`:``} `} key={user.socketId} >{user.username}</li>
               );
             })}
           </ul>
@@ -264,7 +265,7 @@ useEffect(() => {
                   handleLanguage(newLang)
                 }}>
                     {LANGUAGE.map((lang)=>(
-                      <option key={lang.name} value={lang.value} >{lang.name}</option>
+                      <option key={lang.name} value={lang.value} className={`${theme.text} ${theme.background}`} >{lang.name}</option>
                     ))}
                 </select>
 
@@ -333,15 +334,13 @@ useEffect(() => {
                 <div className="flex justify-between items-center mb-2">
                 <h5 className="font-bold">OUTPUT</h5>
 
-                <button type="button" onClick={()=>setSeeOutputCode(true)} className=" text-blue-500 hover:text-blue-600 text-sm font-medium">
+                {!noCode && <button type="button" onClick={()=>setSeeOutputCode(true)} className=" text-blue-500 hover:text-blue-600 text-sm font-medium">
                   See Code
-                </button>
+                </button>}
               </div>
                 {!error && !noCode && (<p className="text-green-500 font-semibold mb-2">✓ Accepted</p>)}
                 {error && !noCode && (<p className="text-red-500 font-semibold mb-2">✗ Compilation Error</p>)}
-                {/* {!error && <pre className={` overflow-y-auto overflow-x-hidden flex-1 min-h-0 whitespace-pre-wrap break-words` }>{output}</pre>}  */}
                 {<pre className={` overflow-y-auto overflow-x-hidden flex-1 min-h-0 whitespace-pre-wrap break-words` }>{output}</pre>} 
-                {/* {error && <pre className={`text-red-500 overflow-y-auto overflow-x-hidden flex-1 min-h-0 whitespace-pre-wrap break-words`} >{output}</pre>} */}
               </div>
             </div>
 

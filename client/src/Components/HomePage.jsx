@@ -17,10 +17,47 @@ const HomePage = () => {
 
   const onSubmit = async(data) => {
     if(createRoom){
-        const room=Math.floor(Math.random()*(999999999-100000000))+100000000;
-        navigate(`code?room=${room}&username=${data.username}`)
+      let tries=0;
+      while(true){
+          tries++;
+          if(tries===15){
+            toast.error("Unable to generate a valid room id, please try again later.");
+            navigate("/");
+            return;
+          } 
+
+          const room=Math.floor(Math.random()*(999999999-100000000))+100000000;
+
+          const res=await fetch(`${import.meta.env.VITE_SERVER_URL}/checkDuplicateRoom`,{
+            method:"POST",
+            headers:{
+              "Content-type":"application/json"
+            },
+            body: JSON.stringify({room:room})
+          })
+
+          const result=await res.json();
+          if(result.duplicate==="true") continue;
+          navigate(`code?room=${room}&username=${data.username}`)
+          break;
+        }
       }else{
-        const res=await fetch(`${import.meta.env.VITE_SERVER_URL}/checkDuplicateUsername`,{
+        const res1=await fetch(`${import.meta.env.VITE_SERVER_URL}/checkRoomExists`,{
+          method:"POST",
+          headers:{
+            "Content-type":"application/json"
+          },
+          body: JSON.stringify({room:data.room})
+        })
+
+        const result1=await res1.json();
+
+        if(result1.exists==="false"){
+          toast.error("The room with the submitted room id doesn't exist.");
+          return;
+        }
+
+        const res2=await fetch(`${import.meta.env.VITE_SERVER_URL}/checkDuplicateUsername`,{
           method:"POST",
           headers:{
             "Content-type":"application/json"
@@ -28,8 +65,8 @@ const HomePage = () => {
           body: JSON.stringify({room:data.room,username:data.username})
         })
 
-        const result=await res.json();
-        if(result.duplicate==="true"){
+        const result2=await res2.json();
+        if(result2.duplicate==="true"){
           toast.error(`Username already exists in this room`);
           return;
         }
@@ -73,7 +110,7 @@ const HomePage = () => {
                   <input
                   {...register("room")}
                   type="text"
-                  placeholder="Please enter your room id"
+                  placeholder="Please enter the room id"
                   className="w-full h-12 px-4 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition invisible"
                   disabled
                   />
@@ -111,7 +148,7 @@ const HomePage = () => {
                 <input
                 {...register("room")}
                 type="text"
-                placeholder="Please enter your room id"
+                placeholder="Please enter the room id"
                 className="w-full h-12 px-4 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
                 />
                 <button
@@ -139,7 +176,8 @@ const HomePage = () => {
                 onClick={()=>{setCreateRoom(true)}}
                 >
                 {isSubmitting ? "Creating..." : "Create Room"}
-                </button></>
+                </button>
+              </>
             }
             <p className="text-sm text-slate-400 text-center">Share room IDs to collaborate with others.</p>
         </form>

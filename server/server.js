@@ -165,6 +165,26 @@ app.post("/checkDuplicateUsername", (req, res) => {
     });
 });
 
+const checkRoom=(room)=>{
+    return room in rooms;
+}
+
+app.post("/checkDuplicateRoom",(req,res)=>{
+    const {room}=req.body;
+    const duplicate=checkRoom(room);
+
+    if(duplicate) return res.status(400).json({duplicate:"true"});
+    return res.status(200).json({duplicate:"false"});
+});
+
+app.post("/checkRoomExists",(req,res)=>{
+    const {room}=req.body;
+    const exists=checkRoom(room);
+
+    if(exists) return res.status(200).json({exists:"true"});
+    return res.status(400).json({exists:"false"});
+});
+
 const PORT=process.env.PORT || 5000
 server.listen(PORT,()=>{
     console.log(`Server running on PORT: ${PORT}`)
