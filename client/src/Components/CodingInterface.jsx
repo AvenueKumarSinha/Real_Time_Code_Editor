@@ -6,6 +6,7 @@ import { FaArrowRotateRight } from "react-icons/fa6";
 import { GiCancel } from "react-icons/gi";
 import { MdLightMode } from "react-icons/md";
 import { MdDarkMode } from "react-icons/md";
+import { ImExit } from "react-icons/im";
 
 import { LANGUAGE,BOILERCODE } from "../../../constants";
 import { useSearchParams } from "react-router-dom";
@@ -52,7 +53,7 @@ const CodingInterface = () => {
   useEffect(()=>{
     socket.on("user-connected",(userConn)=>{
       if(userConn!==username)
-        toast.info(`${userConn} joined the room`)
+        toast.info(`${userConn} joined the room`,{autoClose:3000})
     })
 
     return ()=>socket.off("user-connected");
@@ -61,7 +62,7 @@ const CodingInterface = () => {
   useEffect(()=>{
     socket.on("user-disconnected",(userDis)=>{
       if(userDis!==username)
-        toast.info(`${userDis} left the room`)
+        toast.info(`${userDis} left the room`,{autoClose:3000})
     })
 
     return ()=>socket.off("user-disconnected");
@@ -183,6 +184,12 @@ useEffect(() => {
     }
   }
 
+  const handleLeaveRoom=async()=>{
+    socket.emit("leave-room");
+    toast.success(`Left Room: ${room}`);
+    navigate("/");
+  }
+
   const theme={
     background: dark ? "bg-slate-900" : "bg-slate-50",
     background2: dark ? "bg-slate-800" : "bg-white",
@@ -239,6 +246,12 @@ useEffect(() => {
               <span>{dark ? "Dark" : "Light"}</span>
             </>
           </button>
+
+          <button type="button"
+           onClick={()=>handleLeaveRoom()} 
+           className={`px-3 py-2 rounded-lg flex items-center gap-2 ${theme.icon_hover} ${theme.text}`} >
+              <ImExit size={18} />
+           </button>
         </div>
       </header>
 
@@ -250,7 +263,7 @@ useEffect(() => {
           <ul className="">
             {users.map((user)=>{
               return (
-                <li className={`my-[5%] ${user.username===username?`${theme.current_user_highlight}`:``} `} key={user.socketId} >{user.username}</li>
+                <li className={`my-[5%] ${user.username===username?`${theme.current_user_highlight}`:``} `} key={user.socketId} >{user.username===username?`${user.username} (You)`:`${user.username}`}</li>
               );
             })}
           </ul>
@@ -338,8 +351,8 @@ useEffect(() => {
                   See Code
                 </button>}
               </div>
-                {!error && !noCode && (<p className="text-green-500 font-semibold mb-2">✓ Accepted</p>)}
-                {error && !noCode && (<p className="text-red-500 font-semibold mb-2">✗ Compilation Error</p>)}
+                {!error && !noCode && (<p className="text-green-500 font-semibold mb-2">✓ Successful</p>)}
+                {error && !noCode && (<p className="text-red-500 font-semibold mb-2">✗ Error</p>)}
                 {<pre className={` overflow-y-auto overflow-x-hidden flex-1 min-h-0 whitespace-pre-wrap break-words` }>{output}</pre>} 
               </div>
             </div>

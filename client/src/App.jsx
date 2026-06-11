@@ -32,7 +32,7 @@ function App() {
 
   return (
     <>
-        <ToastContainer position='top-center' newestOnTop />
+        <ToastContainer position='top-center' newestOnTop autoClose={1500} />
         <RouterProvider router={router}/>
     </>
   )

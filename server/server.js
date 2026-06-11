@@ -36,11 +36,10 @@ io.on("connection",(socket)=>{
         console.log(`User disconnected: ${socket.id}`)
 
         const room = socketToRoom[socket.id];
+        if(!room) return;
         
         const username=socketToUsername[socket.id];
         io.to(room).emit("user-disconnected",username)
-
-        if(!room) return;
 
         rooms[room]=rooms[room].filter(
             (user)=>user.socketId !==socket.id
@@ -77,6 +76,25 @@ io.on("connection",(socket)=>{
         if(roomState[room]) 
             socket.emit("sync-state",roomState[room]);
 
+    })
+
+    socket.on("leave-room",async()=>{
+        console.log(`User disconnected: ${socket.id}`)
+
+        const room = socketToRoom[socket.id];
+        if(!room) return;
+        
+        const username=socketToUsername[socket.id];
+        io.to(room).emit("user-disconnected",username)
+
+        rooms[room]=rooms[room].filter(
+            (user)=>user.socketId !==socket.id
+        );
+        delete socketToRoom[socket.id];
+        delete socketToUsername[socket.id];
+
+        if(rooms[room].length===0) delete rooms[room];
+        else io.to(room).emit("users-update",rooms[room])
     })
     
     socket.on("send-code",({room,code,language})=>{
