@@ -18,3 +18,10 @@ export const LANGUAGE_ID={
   javascript:"63",
   python:"71"
 }
+
+export const LANGUAGE_VALUE_TO_NAME={
+  cpp:'C++',
+  java:'Java',
+  javascript: 'JavaScript',
+  python: 'Python'
+}

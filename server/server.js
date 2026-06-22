@@ -107,6 +107,13 @@ io.on("connection",(socket)=>{
     socket.on("change-language",({room,language,code})=>{
         roomState[room]={language,code};
         socket.to(room).emit("sync-state",{language,code});
+        const usernameThatChangedTheLanguage=socketToUsername[socket.id];
+        socket.to(room).emit("toast-change-language",{language,usernameThatChangedTheLanguage});
+    })
+
+    socket.on("reset-code",({room})=>{
+        const usernameThatChangedTheLanguage=socketToUsername[socket.id];
+        socket.to(room).emit("toast-reset-code",{usernameThatChangedTheLanguage});
     })
 })
 

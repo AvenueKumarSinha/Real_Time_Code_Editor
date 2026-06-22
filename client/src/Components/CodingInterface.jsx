@@ -19,6 +19,9 @@ import { toast } from "react-toastify";
 
 import { NavLink,useNavigate } from "react-router-dom";
 
+import Swal from 'sweetalert2'
+import { LANGUAGE_VALUE_TO_NAME } from "../../../constants";
+
 const CodingInterface = () => {
   const [language, setLanguage] = useState("cpp");
   const [code, setCode] = useState(BOILERCODE[language]);
@@ -78,10 +81,10 @@ const CodingInterface = () => {
         socket.off("duplicate-username");
     };
   }, []);
-
-useEffect(() => {
-  if (!room) return;
-
+  
+  useEffect(() => {
+    if (!room) return;
+    
   const joinRoom=()=>{
     toast.success(`Joined Room: ${room}`);
     socket.emit("join-room", {room,username});
@@ -97,6 +100,28 @@ useEffect(() => {
     socket.off("connect", joinRoom);
   };
 },[room]);
+
+useEffect(() => {
+  socket.on("toast-change-language", ({language,usernameThatChangedTheLanguage}) => {
+    if(usernameThatChangedTheLanguage!=username)
+      toast.info(`The language has been changed to ${LANGUAGE_VALUE_TO_NAME[language]} by ${usernameThatChangedTheLanguage}`,{autoClose:3000});
+  });
+
+  return () => {
+      socket.off("toast-change-language");
+  };
+}, []);
+
+useEffect(() => {
+  socket.on("toast-reset-code", ({usernameThatChangedTheLanguage}) => {
+    if(usernameThatChangedTheLanguage!=username)
+      toast.info(`The code has been reset by ${usernameThatChangedTheLanguage}`,{autoClose:3000});
+  });
+
+  return () => {
+      socket.off("toast-reset-code");
+  };
+}, []);
 
   useEffect(()=>{
     const syncHandler=({language,code})=>{
@@ -120,38 +145,73 @@ useEffect(() => {
   },[]);
 
   const handleChange = (value) => {
-    if(isRemote.current){
-      isRemote.current=false;
-      return;
-    }
+    try{
+      if(isRemote.current){
+        isRemote.current=false;
+        return;
+      }
 
-    setCode(value);
-    socket.emit('send-code',{room,code:value,language});
+      setCode(value);
+      socket.emit('send-code',{room,code:value,language});
+    }catch(err){
+      toast.error(`Code syncing has failed unexpectedly! Leaving the room, sorry for the inconvenience.`,{autoClose:4000});
+      console.log(`Code syncing failed due to: ${err}`);
+
+      handleLeaveRoom();
+    }
   };
   
-  const handleReset=(value)=>{
-    if(!confirm(`Are you sure, you want to reset the code?`)) return;
+  const handleReset=async (value)=>{
+    try{
+      const result= await Swal.fire({
+        title: "Reset Code?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: `Yes, reset the code`
+      });
 
-    if(isRemote.current){
-      isRemote.current=false;
-      return;
+      if(!result.isConfirmed) return;
+
+      if(isRemote.current){
+        isRemote.current=false;
+        return;
+      }
+    
+      setCode(value);
+      socket.emit('send-code',{room,code:value,language});
+      socket.emit('reset-code',{room});
+      toast.success("Your code has been reset.");
+    }catch(err){
+      toast.error("Unable to reset the code.")
     }
-  
-    setCode(value);
-    socket.emit('send-code',{room,code:value,language});
-    toast.success("Your code has been reset.");
   }
 
-  const handleLanguage=(value)=>{
-    if(isRemote.current){
-      isRemote.current=false;
-      return;
+  const handleLanguage=async (value)=>{
+    try{
+      const result = await Swal.fire({
+        title: "Change Language?",
+        // text: "This action cannot be undone.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: `Yes, change the language to ${LANGUAGE_VALUE_TO_NAME[value]}`,
+      });
+
+      if(!result.isConfirmed) return;
+
+      if(isRemote.current){
+        isRemote.current=false;
+        return;
+      }
+
+      setLanguage(value)
+      setCode(BOILERCODE[value])
+
+      socket.emit('change-language',{room,language:value,code:BOILERCODE[value]});
+
+      toast.success(`The language has been changed to ${LANGUAGE_VALUE_TO_NAME[value]} successfully`)
+    }catch(err){
+      toast.error("Unable to change the language.")
     }
-
-    setLanguage(value)
-    setCode(BOILERCODE[value])
-
-    socket.emit('change-language',{room,language:value,code:BOILERCODE[value]});
   }
 
   const handleRun=async ()=>{
@@ -185,9 +245,13 @@ useEffect(() => {
   }
 
   const handleLeaveRoom=async()=>{
-    socket.emit("leave-room");
-    toast.success(`Left Room: ${room}`);
-    navigate("/");
+    try{
+      socket.emit("leave-room");
+      toast.success(`Left Room: ${room}`);
+      navigate("/");
+    }catch(err){
+      toast.error(`Unable to leave the room!`);
+    }
   }
 
   const theme={
