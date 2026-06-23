@@ -1,26 +1,33 @@
 import React, { useState } from "react";
+
+import Editor from "@monaco-editor/react";
+
 import { FaPlay } from "react-icons/fa";
 import { IoCopy } from "react-icons/io5";
-import Editor from "@monaco-editor/react";
 import { FaArrowRotateRight } from "react-icons/fa6";
 import { GiCancel } from "react-icons/gi";
 import { MdLightMode } from "react-icons/md";
 import { MdDarkMode } from "react-icons/md";
 import { ImExit } from "react-icons/im";
+import { IoMdNotificationsOff } from "react-icons/io";
+import { IoMdNotifications } from "react-icons/io";
 
 import { LANGUAGE,BOILERCODE } from "../../../constants";
+import { LANGUAGE_VALUE_TO_NAME } from "../../../constants";
+
 import { useSearchParams } from "react-router-dom";
 import { socket } from "../socket";
 import { useRef } from "react";
 import { useEffect } from "react";
 
 import Loader from "./Loader";
-import { toast } from "react-toastify";
 
+import { toast } from "react-toastify";
 import { NavLink,useNavigate } from "react-router-dom";
 
 import Swal from 'sweetalert2'
-import { LANGUAGE_VALUE_TO_NAME } from "../../../constants";
+import { Tooltip } from "react-tooltip";
+import "react-tooltip/dist/react-tooltip.css";
 
 const CodingInterface = () => {
   const [language, setLanguage] = useState("cpp");
@@ -31,7 +38,7 @@ const CodingInterface = () => {
   const room=Number(params.get("room"))
 
   const isRemote=useRef(false);
-
+  
   const [output,setOutput]=useState("You must run your code first")
   const [input,setInput]=useState("")
   const [error,setError]=useState(false)
@@ -42,8 +49,23 @@ const CodingInterface = () => {
   const [running,setRunning]=useState(false)
   const [reset,setReset]=useState(false)
   const [noCode,setNoCode]=useState(true)
-
+  const[notifications,setNotifications]=useState(true)
+  
   const navigate=useNavigate();
+  
+  useEffect(()=>{
+    if(!username){
+      toast.error("No username is given")
+      navigate("/")
+    }
+  },[])
+
+  useEffect(()=>{
+    if(!room){
+      toast.error("No room id is given")
+      navigate("/")
+    }
+  },[])
 
   useEffect(()=>{
     socket.on("users-update",(userlist)=>{
@@ -55,21 +77,23 @@ const CodingInterface = () => {
 
   useEffect(()=>{
     socket.on("user-connected",(userConn)=>{
-      if(userConn!==username)
-        toast.info(`${userConn} joined the room`,{autoClose:3000})
+      if(userConn!==username){
+        if(notifications) toast.info(`${userConn} joined the room`,{autoClose:3000})
+      }
     })
 
     return ()=>socket.off("user-connected");
-  },[])
+  },[notifications])
 
   useEffect(()=>{
     socket.on("user-disconnected",(userDis)=>{
-      if(userDis!==username)
-        toast.info(`${userDis} left the room`,{autoClose:3000})
+      if(userDis!==username){
+        if(notifications) toast.info(`${userDis} left the room`,{autoClose:3000})
+      }
     })
 
     return ()=>socket.off("user-disconnected");
-  },[])
+  },[notifications])
 
   useEffect(() => {
     socket.on("duplicate-username", () => {
@@ -103,8 +127,9 @@ const CodingInterface = () => {
 
 useEffect(() => {
   socket.on("toast-change-language", ({language,usernameThatChangedTheLanguage}) => {
-    if(usernameThatChangedTheLanguage!=username)
-      toast.info(`The language has been changed to ${LANGUAGE_VALUE_TO_NAME[language]} by ${usernameThatChangedTheLanguage}`,{autoClose:3000});
+    if(usernameThatChangedTheLanguage!=username){
+     toast.info(`The language has been changed to ${LANGUAGE_VALUE_TO_NAME[language]} by ${usernameThatChangedTheLanguage}`,{autoClose:3000});
+    }
   });
 
   return () => {
@@ -114,8 +139,9 @@ useEffect(() => {
 
 useEffect(() => {
   socket.on("toast-reset-code", ({usernameThatChangedTheLanguage}) => {
-    if(usernameThatChangedTheLanguage!=username)
-      toast.info(`The code has been reset by ${usernameThatChangedTheLanguage}`,{autoClose:3000});
+    if(usernameThatChangedTheLanguage!=username){
+     toast.info(`The code has been reset by ${usernameThatChangedTheLanguage}`,{autoClose:3000});
+    }
   });
 
   return () => {
@@ -180,7 +206,7 @@ useEffect(() => {
       setCode(value);
       socket.emit('send-code',{room,code:value,language});
       socket.emit('reset-code',{room});
-      toast.success("Your code has been reset.");
+      if(notifications) toast.success("Your code has been reset.");
     }catch(err){
       toast.error("Unable to reset the code.")
     }
@@ -208,7 +234,7 @@ useEffect(() => {
 
       socket.emit('change-language',{room,language:value,code:BOILERCODE[value]});
 
-      toast.success(`The language has been changed to ${LANGUAGE_VALUE_TO_NAME[value]} successfully`)
+      if(notifications) toast.success(`The language has been changed to ${LANGUAGE_VALUE_TO_NAME[value]} successfully`)
     }catch(err){
       toast.error("Unable to change the language.")
     }
@@ -263,7 +289,10 @@ useEffect(() => {
     icon_hover: dark? "hover:bg-slate-700" : "hover:bg-slate-100",
     shadow: dark? "shadow-lg shadow-black/20" : "shadow-md",
     accent: dark? "text-blue-400" : "text-blue-600",
-    current_user_highlight: dark?"text-amber-300":"text-amber-600"
+    current_user_highlight: dark?"text-amber-300":"text-amber-600",
+    tooltip_background: dark?"#000000":"#f5f4f4",
+    tooltip_color: dark?"#f8fafc":"#0f172a",
+    tooltip_border: dark ? "1px solid #475569" : "1px solid #e2e8f0",
   };
 
   return (
@@ -290,11 +319,13 @@ useEffect(() => {
               onClick={async()=>{
                 try{
                   await navigator.clipboard.writeText(room)
-                  toast.success("Room ID Copied")
+                  if(notifications) toast.success("Room ID Copied")
                 }catch{
                   toast.error("Copy Failed")
                 }
               }}
+              data-tooltip-id="icon-tooltip"
+              data-tooltip-content={"Copy room ID"}
             >
               <IoCopy size={18} />
             </button>
@@ -302,6 +333,16 @@ useEffect(() => {
         </div>
 
         <div className="flex items-center gap-3" >
+          <button type="button"
+            onClick={()=>setNotifications(!notifications)}
+            data-tooltip-id="icon-tooltip"
+            data-tooltip-content={`${notifications?"Turn OFF Notifications":"Turn ON Notification"}`}
+            className={`px-3 py-2 rounded-lg flex items-center gap-2 ${theme.icon_hover} ${theme.text}`} >
+            <>
+              {notifications ? <IoMdNotifications size={20} /> : <IoMdNotificationsOff size={20} />}
+            </>
+          </button>
+
           <button type="button" 
             onClick={()=>setDark(!dark)} 
             className={`px-3 py-2 rounded-lg flex items-center gap-2 ${theme.icon_hover} ${theme.text}`} >
@@ -312,6 +353,8 @@ useEffect(() => {
           </button>
 
           <button type="button"
+           data-tooltip-id="icon-tooltip"
+           data-tooltip-content={"Leave Room"}
            onClick={()=>handleLeaveRoom()} 
            className={`px-3 py-2 rounded-lg flex items-center gap-2 ${theme.icon_hover} ${theme.text}`} >
               <ImExit size={18} />
@@ -350,22 +393,31 @@ useEffect(() => {
                   <button className={`${theme.icon_text} ${theme.icon_hover} p-2 rounded-lg transition`} onClick={async()=>{
                     try{
                       await navigator.clipboard.writeText(code)
-                      toast.success("Code Copied To clipboard")
+                      if(notifications) toast.success("Code Copied To clipboard")
                     }catch{
                       toast.error("Copy Failed")
                     }
-                  }} >
+                  }} 
+                  data-tooltip-id="icon-tooltip"
+                  data-tooltip-content={"Copy Code"}
+                  >
                     <IoCopy size={18} />
                   </button>
                   {!running && 
-                    <button className={`bg-green-500 hover:bg-green-600 text-white rounded-lg px-3 py-2 transition`} onClick={()=>handleRun()} >
+                    <button
+                     data-tooltip-id="icon-tooltip"
+                     data-tooltip-content={"Run Code"}
+                     className={`bg-green-500 hover:bg-green-600 text-white rounded-lg px-3 py-2 transition`} onClick={()=>handleRun()} >
                       <FaPlay size={18} />
                     </button>
                   }
                   {running &&
                    <Loader size="h-6 w-6" color={!dark?`border-t-gray-400`:`border-t-white`} backgroundColor={!dark?`border-gray-300`:`border-gray-500`} />
                   }
-                  <button className={`bg-amber-500 hover:bg-amber-600 text-white rounded-lg px-3 py-2 transition`} onClick={()=>handleReset(BOILERCODE[language])} ><FaArrowRotateRight size={18} /></button>
+                  <button
+                   data-tooltip-id="icon-tooltip"
+                   data-tooltip-content={"Reset Code"}
+                   className={`bg-amber-500 hover:bg-amber-600 text-white rounded-lg px-3 py-2 transition`} onClick={()=>handleReset(BOILERCODE[language])} ><FaArrowRotateRight size={18} /></button>
                 </div>
             </div>
 
@@ -423,6 +475,23 @@ useEffect(() => {
 
         </main>
       </section>
+
+      <Tooltip 
+        id="icon-tooltip"
+        place="bottom"
+        opacity={1}
+        delayShow={500}
+        style={{
+          backgroundColor: theme.tooltip_background,
+          color: theme.tooltip_color,
+          border: theme.tooltip_border,
+          fontSize: "14px",
+          padding: "4px 8px",
+          borderRadius: "6px",
+          zIndex: 9999,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+        }}
+      />
     </div>
   );
 };

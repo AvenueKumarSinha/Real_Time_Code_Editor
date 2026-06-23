@@ -103,6 +103,7 @@ const HomePage = () => {
             type="text"
             placeholder="Please enter your username"
             className="w-full h-12 px-4 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+            required
             />
 
             {createRoom && 
@@ -113,6 +114,7 @@ const HomePage = () => {
                   placeholder="Please enter the room id"
                   className="w-full h-12 px-4 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition invisible"
                   disabled
+                  required
                   />
                   <button
                   disabled={isSubmitting}
@@ -150,6 +152,7 @@ const HomePage = () => {
                 type="text"
                 placeholder="Please enter the room id"
                 className="w-full h-12 px-4 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                required
                 />
                 <button
                 disabled={isSubmitting}
