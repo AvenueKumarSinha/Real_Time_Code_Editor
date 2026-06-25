@@ -11,6 +11,8 @@ import { MdDarkMode } from "react-icons/md";
 import { ImExit } from "react-icons/im";
 import { IoMdNotificationsOff } from "react-icons/io";
 import { IoMdNotifications } from "react-icons/io";
+import { FaCrown } from "react-icons/fa";
+import { MdPersonRemove } from "react-icons/md";
 
 import { LANGUAGE,BOILERCODE } from "../../../constants";
 import { LANGUAGE_VALUE_TO_NAME } from "../../../constants";
@@ -23,7 +25,7 @@ import { useEffect } from "react";
 import Loader from "./Loader";
 
 import { toast } from "react-toastify";
-import { NavLink,useNavigate } from "react-router-dom";
+import { NavLink,useNavigate, useLocation } from "react-router-dom";
 
 import Swal from 'sweetalert2'
 import { Tooltip } from "react-tooltip";
@@ -36,6 +38,8 @@ const CodingInterface = () => {
   const [params]=useSearchParams()
   const username=params.get("username");
   const room=Number(params.get("room"))
+  const location=useLocation();
+  const roomMode=location.state?.roomMode??null;
 
   const isRemote=useRef(false);
   
@@ -50,6 +54,9 @@ const CodingInterface = () => {
   const [reset,setReset]=useState(false)
   const [noCode,setNoCode]=useState(true)
   const[notifications,setNotifications]=useState(true)
+
+  const [admin,setAdmin]=useState(false)
+  const [currentRoomMode,setCurrentRoomMode]=useState("admin")
   
   const navigate=useNavigate();
   
@@ -111,7 +118,7 @@ const CodingInterface = () => {
     
   const joinRoom=()=>{
     toast.success(`Joined Room: ${room}`);
-    socket.emit("join-room", {room,username});
+    socket.emit("join-room", {room,username,roomMode});
   };
 
   if (socket.connected){
@@ -123,7 +130,18 @@ const CodingInterface = () => {
   return ()=>{
     socket.off("connect", joinRoom);
   };
-},[room]);
+},[room,username,roomMode]);
+
+useEffect(() => {
+  socket.on("joined-room",({admin,roomMode})=>{
+      setAdmin(admin);
+      setCurrentRoomMode(roomMode);
+    });
+
+  return () => {
+    socket.off("joined-room");
+  };
+}, []);
 
 useEffect(() => {
   socket.on("toast-change-language", ({language,usernameThatChangedTheLanguage}) => {
@@ -169,6 +187,50 @@ useEffect(() => {
       socket.off("receive-code", codeHandler);
     }
   },[]);
+
+  useEffect(()=>{
+    socket.on("not-admin",()=>{
+      toast.error("Only the room admin can perform this action.");
+    });
+
+    return ()=>{
+      socket.off("not-admin");
+    };
+}, []);
+
+useEffect(()=>{
+  socket.on("kicked",({kickedBy})=>{
+      toast.error(`You were kicked by ${kickedBy}`);
+      navigate("/");
+    });
+
+  return ()=>{
+    socket.off("kicked");
+  };
+}, []);
+
+useEffect(()=>{
+  socket.on("kick-update",({kickedBy,kicked})=>{
+    if(kickedBy!==username){
+      if(notifications) toast.info(`${kicked} has been kicked by ${kickedBy}`,{autoClose:2000})
+    }
+  });
+
+  return ()=>{
+    socket.off("kick-update");
+  };
+},[notifications]);
+
+useEffect(()=>{
+  socket.on("room-closed",()=>{
+    toast.warn("Admin has left, therefore the room is now closed!",{autoClose:3000})
+    navigate("/");
+  })
+
+  return ()=>{
+    socket.off("room-closed");
+  }
+},[])
 
   const handleChange = (value) => {
     try{
@@ -272,11 +334,45 @@ useEffect(() => {
 
   const handleLeaveRoom=async()=>{
     try{
+      if(currentRoomMode==="admin" && admin && users.length!==1){
+        const response=await Swal.fire({
+          title:"You are the admin, if you leave then everybody is forced out of the room",
+          icon:"warning",
+          showCancelButton:true,
+          confirmButtonText:"Yes, I want to leave the room."
+        })
+
+        if(!response.isConfirmed) return;
+
+        socket.emit("admin-left");
+        return;
+      }
+
       socket.emit("leave-room");
       toast.success(`Left Room: ${room}`);
       navigate("/");
     }catch(err){
       toast.error(`Unable to leave the room!`);
+    }
+  }
+
+  const handleKickUser=async(socketId,targetUserName)=>{
+    try{
+      const result=await Swal.fire({
+        title:`Kick ${targetUserName}?`,
+        icon:"warning",
+        showCancelButton:true,
+        confirmButtonText:`Yes, kick ${targetUserName}`
+      })
+
+      if(!result.isConfirmed) return;
+
+      socket.emit("kick-user",{room,targetSocketId:socketId},(response)=>{
+        if(!response.success) toast.error(`Unable to kick ${targetUserName}`)
+        if(response.success) toast.success(`${targetUserName} has been kicked.`)
+      });
+    }catch(err){
+      toast.error(`Unable to kick ${targetUserName}`);
     }
   }
 
@@ -369,10 +465,27 @@ useEffect(() => {
           <h5 className="font-bold text-lg mb-3"> Online Users ({users.length}) </h5>
           <ul className="">
             {users.map((user)=>{
-              return (
-                <li className={`my-[5%] ${user.username===username?`${theme.current_user_highlight}`:``} `} key={user.socketId} >{user.username===username?`${user.username} (You)`:`${user.username}`}</li>
-              );
-            })}
+              return(
+                <li key={user.socketId} className={`flex items-center justify-between rounded-lg px-2 py-2 ${user.username === username ? theme.current_user_highlight : ""}`}>
+                  <div className="flex items-center gap-2">
+                    <span>
+                      {user.username}
+                      {user.username === username && " (You)"}
+                    </span>
+                    {user.admin && (<FaCrown className="text-yellow-500" size={20} />)}
+                  </div>
+
+                  {currentRoomMode==="admin" && admin && !user.admin &&
+                    user.username !== username && (
+                      <button className="text-red-500 hover:text-red-600 transition"
+                        onClick={() =>handleKickUser(user.socketId,user.username)}
+                        title="Kick User"
+                      >
+                        <MdPersonRemove size={20} />
+                      </button>
+                  )}
+                </li>
+              )})}
           </ul>
         </div>
 

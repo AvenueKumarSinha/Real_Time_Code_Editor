@@ -26,7 +26,7 @@ const io=new Server(server,{
 })
 
 const roomState = {}; // { roomId: { code, language } }
-const rooms={}; // {rooms1:[{socketID,username}]}
+const rooms={}; // {roomsid:{mode,users:[socketid,username,admin]}
 const socketToRoom = {};
 const socketToUsername={};
 
@@ -41,18 +41,18 @@ io.on("connection",(socket)=>{
         const username=socketToUsername[socket.id];
         io.to(room).emit("user-disconnected",username)
 
-        rooms[room]=rooms[room].filter(
+        rooms[room].users=rooms[room].users.filter(
             (user)=>user.socketId !==socket.id
         );
         delete socketToRoom[socket.id];
         delete socketToUsername[socket.id];
 
-        if(rooms[room].length===0) delete rooms[room];
-        else io.to(room).emit("users-update",rooms[room])
+        if(rooms[room].users.length===0) delete rooms[room];
+        else io.to(room).emit("users-update",rooms[room].users)
 
     })
 
-    socket.on("join-room",async({room,username})=>{
+    socket.on("join-room",async({room,username,roomMode})=>{
         const duplicateUsername=checkDuplicateUsername(room,username);
         if(duplicateUsername){
             socket.emit("duplicate-username");
@@ -64,17 +64,37 @@ io.on("connection",(socket)=>{
         socketToRoom[socket.id] = room;
         socketToUsername[socket.id]=username;
 
-        if(!rooms[room]) rooms[room]=[]
-        rooms[room].push({
-            socketId:socket.id,
-            username
-        })
+        if(!rooms[room]){
+            rooms[room]={
+                mode: roomMode,
+                users: []
+            };
 
-        io.to(room).emit("users-update",rooms[room])
-        io.to(room).emit("user-connected",username)
+            rooms[room].users.push({
+                socketId: socket.id,
+                username,
+                admin: roomMode === "admin"
+            });
+        }else{
+            rooms[room].users.push({
+                socketId: socket.id,
+                username,
+                admin: false
+            });
+        }
+        
+        const currentUser = rooms[room].users.find(user => user.socketId === socket.id);
 
-        if(roomState[room]) 
-            socket.emit("sync-state",roomState[room]);
+        socket.emit("joined-room",{
+            admin:currentUser.admin,
+            roomMode:rooms[room].mode
+        });
+
+        io.to(room).emit("users-update",rooms[room].users);
+
+        io.to(room).emit("user-connected",username);
+
+        if (roomState[room]) socket.emit("sync-state",roomState[room]);
 
     })
 
@@ -87,14 +107,14 @@ io.on("connection",(socket)=>{
         const username=socketToUsername[socket.id];
         io.to(room).emit("user-disconnected",username)
 
-        rooms[room]=rooms[room].filter(
+        rooms[room].users=rooms[room].users.filter(
             (user)=>user.socketId !==socket.id
         );
         delete socketToRoom[socket.id];
         delete socketToUsername[socket.id];
 
-        if(rooms[room].length===0) delete rooms[room];
-        else io.to(room).emit("users-update",rooms[room])
+        if(rooms[room].users.length===0) delete rooms[room];
+        else io.to(room).emit("users-update",rooms[room].users)
     })
     
     socket.on("send-code",({room,code,language})=>{
@@ -114,6 +134,56 @@ io.on("connection",(socket)=>{
     socket.on("reset-code",({room})=>{
         const usernameThatChangedTheLanguage=socketToUsername[socket.id];
         socket.to(room).emit("toast-reset-code",{usernameThatChangedTheLanguage});
+    })
+
+    socket.on("kick-user",({room,targetSocketId},callback)=>{
+        if(rooms[room]?.mode!=="admin") return;
+
+        if(!isAdmin(room, socket.id)){
+            socket.emit("not-admin");
+            return;
+        }
+
+        const targetUser = getUserBySocketId(room,targetSocketId);
+
+        if (!targetUser) return callback({
+            success:false
+        });
+
+        if(targetUser.admin) return callback({
+            success:false
+        });
+
+        callback({success:true})
+
+        io.to(targetSocketId).emit("kicked",{room,kickedBy:socketToUsername[socket.id]});
+
+        const targetSocket =io.sockets.sockets.get(targetSocketId);
+
+        if (targetSocket) targetSocket.leave(room);
+        
+        rooms[room].users = rooms[room].users.filter(user => user.socketId !== targetSocketId);
+        delete socketToRoom[targetSocketId];
+
+        io.to(room).emit("kick-update",{kickedBy:socketToUsername[socket.id],kicked:socketToUsername[targetSocketId]})
+
+        delete socketToUsername[targetSocketId];
+
+        io.to(room).emit("users-update",rooms[room].users);
+    });
+
+    socket.on("admin-left",()=>{
+        const room=socketToRoom[socket.id];
+        if(!room) return;
+
+        io.to(room).emit("room-closed");
+
+        rooms[room].users.forEach(user => {
+            delete socketToRoom[user.socketId];
+            delete socketToUsername[user.socketId];
+        });
+
+        delete rooms[room];
     })
 })
 
@@ -167,12 +237,24 @@ app.post("/run",async(req,res)=>{
 
 const checkDuplicateUsername=(room,username)=>{
     const duplicate =
-            rooms[room]?.some(
+            rooms[room]?.users.some(
                 user => user.username === username
             ) || false;
     
     return duplicate;
 }
+
+const isAdmin=(room,socketId)=>{
+  return (rooms[room]?.users.find(user =>user.socketId ===socketId)?.admin === true);
+};
+
+const isAdminMode=(room)=>{
+    rooms[room]?.mode ==="admin"
+};
+
+const getUserBySocketId =(room, socketId)=>{
+    return rooms[room]?.users.find(user => user.socketId === socketId);
+};
 
 app.post("/checkDuplicateUsername", (req, res) => {
     const { room, username } = req.body;
