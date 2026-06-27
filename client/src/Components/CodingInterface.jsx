@@ -13,6 +13,7 @@ import { IoMdNotificationsOff } from "react-icons/io";
 import { IoMdNotifications } from "react-icons/io";
 import { FaCrown } from "react-icons/fa";
 import { MdPersonRemove } from "react-icons/md";
+import { IoMdSettings } from "react-icons/io";
 
 import { LANGUAGE,BOILERCODE } from "../../../constants";
 import { LANGUAGE_VALUE_TO_NAME } from "../../../constants";
@@ -30,6 +31,7 @@ import { NavLink,useNavigate, useLocation } from "react-router-dom";
 import Swal from 'sweetalert2'
 import { Tooltip } from "react-tooltip";
 import "react-tooltip/dist/react-tooltip.css";
+import Settings from "./Settings";
 
 const CodingInterface = () => {
   const [language, setLanguage] = useState("cpp");
@@ -57,6 +59,10 @@ const CodingInterface = () => {
 
   const [admin,setAdmin]=useState(false)
   const [currentRoomMode,setCurrentRoomMode]=useState("admin")
+
+  const [settings,setSettings]=useState(false)
+  const [settingsLanguage,setSettingsLanguage]=useState(false)
+  const [settingsReset,setSettingsReset]=useState(false)
   
   const navigate=useNavigate();
   
@@ -102,16 +108,16 @@ const CodingInterface = () => {
     return ()=>socket.off("user-disconnected");
   },[notifications])
 
-  useEffect(() => {
-    socket.on("duplicate-username", () => {
-        toast.error("Username already exists in this room");
-        navigate("/");
-    });
+  // useEffect(() => {
+  //   socket.on("duplicate-username", () => {
+  //       toast.error("Username already exists in this room");
+  //       navigate("/");
+  //   });
 
-    return () => {
-        socket.off("duplicate-username");
-    };
-  }, []);
+  //   return () => {
+  //       socket.off("duplicate-username");
+  //   };
+  // }, []);
   
   useEffect(() => {
     if (!room) return;
@@ -133,9 +139,11 @@ const CodingInterface = () => {
 },[room,username,roomMode]);
 
 useEffect(() => {
-  socket.on("joined-room",({admin,roomMode})=>{
+  socket.on("joined-room",({admin,roomMode,settings})=>{
       setAdmin(admin);
       setCurrentRoomMode(roomMode);
+      setSettingsLanguage(settings.language);
+      setSettingsReset(settings.reset);
     });
 
   return () => {
@@ -190,7 +198,7 @@ useEffect(() => {
 
   useEffect(()=>{
     socket.on("not-admin",()=>{
-      toast.error("Only the room admin can perform this action.");
+      toast.warn("Only the room admin can perform this action.");
     });
 
     return ()=>{
@@ -223,12 +231,23 @@ useEffect(()=>{
 
 useEffect(()=>{
   socket.on("room-closed",()=>{
-    toast.warn("Admin has left, therefore the room is now closed!",{autoClose:3000})
+    toast.info("Admin has left, therefore the room is now closed!",{autoClose:3000})
     navigate("/");
   })
 
   return ()=>{
     socket.off("room-closed");
+  }
+},[])
+
+useEffect(()=>{
+  socket.on("update-settings",(settings)=>{
+    setSettingsLanguage(settings.language);
+    setSettingsReset(settings.reset);
+  })
+
+  return ()=>{
+    socket.off("update-settings");
   }
 },[])
 
@@ -251,6 +270,11 @@ useEffect(()=>{
   
   const handleReset=async (value)=>{
     try{
+      if(currentRoomMode==="admin" && !admin && !settingsReset){
+        toast.warn("Only admin can reset the code as per settings.");
+        return;
+      }
+
       const result= await Swal.fire({
         title: "Reset Code?",
         icon: "warning",
@@ -276,6 +300,11 @@ useEffect(()=>{
 
   const handleLanguage=async (value)=>{
     try{
+      if(currentRoomMode==="admin" && !admin && !settingsLanguage){
+        toast.warn("Only admin can change the language as per settings.")
+        return;
+      }
+
       const result = await Swal.fire({
         title: "Change Language?",
         // text: "This action cannot be undone.",
@@ -392,7 +421,10 @@ useEffect(()=>{
   };
 
   return (
+    
     <div className={`${theme.background} min-h-screen w-full flex flex-col gap-4 px-4 py-3`}>
+
+      <Settings open={settings} onClose={()=>setSettings(false)} dark={dark} roomMode={currentRoomMode} admin={admin} settingsLanguage={settingsLanguage} settingsReset={settingsReset} />
 
       <header className={`${theme.background2} ${theme.shadow} border ${theme.border} rounded-xl h-14 px-5 flex justify-between items-center`}>
         <div className="flex gap-10 items-center" >  
@@ -449,6 +481,15 @@ useEffect(()=>{
           </button>
 
           <button type="button"
+            data-tooltip-id="icon-tooltip"
+            data-tooltip-content={"Settings"}
+            onClick={()=>setSettings(true)}
+            className={`px-3 py-2 rounded-lg flex items-center gap-2 ${theme.icon_hover} ${theme.text}`}
+          >
+            <IoMdSettings size={20} />
+          </button>
+
+          <button type="button"
            data-tooltip-id="icon-tooltip"
            data-tooltip-content={"Leave Room"}
            onClick={()=>handleLeaveRoom()} 
@@ -498,7 +539,7 @@ useEffect(()=>{
                   handleLanguage(newLang)
                 }}>
                     {LANGUAGE.map((lang)=>(
-                      <option key={lang.name} value={lang.value} className={`${theme.text} ${theme.background}`} >{lang.name}</option>
+                      <option key={lang.name} value={lang.value} className={`${theme.text} ${theme.background}`} disabled={currentRoomMode==="admin" && !admin && !settingsLanguage} >{lang.name}</option>
                     ))}
                 </select>
 
@@ -529,8 +570,8 @@ useEffect(()=>{
                   }
                   <button
                    data-tooltip-id="icon-tooltip"
-                   data-tooltip-content={"Reset Code"}
-                   className={`bg-amber-500 hover:bg-amber-600 text-white rounded-lg px-3 py-2 transition`} onClick={()=>handleReset(BOILERCODE[language])} ><FaArrowRotateRight size={18} /></button>
+                   data-tooltip-content={`Reset Code ${(currentRoomMode==="admin" && !admin && !settingsReset)?"(Disabled by Admin)":""}`}
+                   className={`bg-amber-500 hover:bg-amber-600 text-white rounded-lg px-3 py-2 transition cursor-pointer ${(currentRoomMode==="admin" && !admin && !settingsReset) && "cursor-not-allowed"} `} onClick={()=>handleReset(BOILERCODE[language])} disabled={currentRoomMode==="admin" && !admin && !settingsReset} ><FaArrowRotateRight size={18} /></button>
                 </div>
             </div>
 

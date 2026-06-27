@@ -7,6 +7,7 @@ import axios from "axios"
 import e from "express"
 
 import { LANGUAGE_ID } from "../constants.js"
+import { settings } from "cluster"
 
 dotenv.config()
 
@@ -26,7 +27,7 @@ const io=new Server(server,{
 })
 
 const roomState = {}; // { roomId: { code, language } }
-const rooms={}; // {roomsid:{mode,users:[socketid,username,admin]}
+const rooms={}; // {roomsid:{mode,users:[socketid,username,admin],settings:{language:false,...}}
 const socketToRoom = {};
 const socketToUsername={};
 
@@ -67,7 +68,11 @@ io.on("connection",(socket)=>{
         if(!rooms[room]){
             rooms[room]={
                 mode: roomMode,
-                users: []
+                users: [],
+                settings: {
+                    language:false,
+                    reset:false
+                }
             };
 
             rooms[room].users.push({
@@ -87,7 +92,8 @@ io.on("connection",(socket)=>{
 
         socket.emit("joined-room",{
             admin:currentUser.admin,
-            roomMode:rooms[room].mode
+            roomMode:rooms[room].mode,
+            settings:rooms[room].settings
         });
 
         io.to(room).emit("users-update",rooms[room].users);
@@ -185,6 +191,22 @@ io.on("connection",(socket)=>{
 
         delete rooms[room];
     })
+
+    socket.on("update-settings-server",({language,reset},callback)=>{
+        const room=socketToRoom[socket.id];
+        if(!room) return callback({success:false, admin:false});
+
+        if(isAdminMode(room) && !isAdmin(room,socket.id)){
+            socket.emit("not-admin");
+            return callback({success:false, admin:true});
+        }
+
+        rooms[room].settings.language=language;
+        rooms[room].settings.reset=reset;
+
+        io.to(room).emit("update-settings",rooms[room].settings);
+        return callback({success:true});
+    })
 })
 
 const encode=(str)=>{
@@ -249,7 +271,7 @@ const isAdmin=(room,socketId)=>{
 };
 
 const isAdminMode=(room)=>{
-    rooms[room]?.mode ==="admin"
+    return rooms[room]?.mode ==="admin"
 };
 
 const getUserBySocketId =(room, socketId)=>{
