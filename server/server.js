@@ -27,7 +27,7 @@ const io=new Server(server,{
 })
 
 const roomState = {}; // { roomId: { code, language } }
-const rooms={}; // {roomsid:{mode,users:[socketid,username,admin],settings:{language:false,...}}
+const rooms={}; // {roomsid:{mode,users:[socketid,username,admin],settings:{language:false,...},chats:[]}
 const socketToRoom = {};
 const socketToUsername={};
 
@@ -40,6 +40,23 @@ io.on("connection",(socket)=>{
         if(!room) return;
         
         const username=socketToUsername[socket.id];
+
+        if(rooms[room].mode==="admin" && isAdmin(room,socket.id) && rooms[room].users.length>1){
+            const room=socketToRoom[socket.id];
+            if(!room) return;
+
+            io.to(room).emit("room-closed");
+
+            rooms[room].users.forEach(user => {
+                delete socketToRoom[user.socketId];
+                delete socketToUsername[user.socketId];
+            });
+
+            delete rooms[room];
+
+            return;
+        }
+
         io.to(room).emit("user-disconnected",username)
 
         rooms[room].users=rooms[room].users.filter(
@@ -53,7 +70,11 @@ io.on("connection",(socket)=>{
 
     })
 
-    socket.on("join-room",async({room,username,roomMode})=>{
+    socket.on("join-room",async({room,username,roomMode},callback)=>{
+        if(rooms[room] && rooms[room].mode==="admin" && rooms[room].settings.roomLock) 
+            return callback({success: false, roomLock:true});
+            
+
         const duplicateUsername=checkDuplicateUsername(room,username);
         if(duplicateUsername){
             socket.emit("duplicate-username");
@@ -71,8 +92,12 @@ io.on("connection",(socket)=>{
                 users: [],
                 settings: {
                     language:false,
-                    reset:false
-                }
+                    reset:false,
+                    roomLock:false,
+                    chatEnable:true,
+                    chatHistory:true
+                },
+                chats: []
             };
 
             rooms[room].users.push({
@@ -96,11 +121,16 @@ io.on("connection",(socket)=>{
             settings:rooms[room].settings
         });
 
+        if(rooms[room].mode==="open" || rooms[room].settings.chatHistory)
+            io.to(room).emit("chat-history",rooms[room].chats);
+
         io.to(room).emit("users-update",rooms[room].users);
 
         io.to(room).emit("user-connected",username);
 
         if (roomState[room]) socket.emit("sync-state",roomState[room]);
+
+        return callback({success:true,roomLock:false});
 
     })
 
@@ -192,7 +222,7 @@ io.on("connection",(socket)=>{
         delete rooms[room];
     })
 
-    socket.on("update-settings-server",({language,reset},callback)=>{
+    socket.on("update-settings-server",({language,reset,roomLock,chatEnable,chatHistory},callback)=>{
         const room=socketToRoom[socket.id];
         if(!room) return callback({success:false, admin:false});
 
@@ -203,9 +233,29 @@ io.on("connection",(socket)=>{
 
         rooms[room].settings.language=language;
         rooms[room].settings.reset=reset;
+        rooms[room].settings.roomLock=roomLock;
+        rooms[room].settings.chatEnable=chatEnable;
+        rooms[room].settings.chatHistory=chatHistory;
 
         io.to(room).emit("update-settings",rooms[room].settings);
         return callback({success:true});
+    })
+
+    socket.on("send-chat",({message})=>{
+        const room=socketToRoom[socket.id];
+        if(!rooms[room]) return;
+
+        if(rooms[room].mode==="admin" && !rooms[room].settings.chatEnable) return;
+
+        const chat={
+            username: socketToUsername[socket.id],
+            message:message,
+            timestamp: Date.now()
+        };
+
+        rooms[room].chats.push(chat);
+
+        io.to(room).emit("receive-chat",chat);
     })
 })
 
@@ -276,6 +326,10 @@ const isAdminMode=(room)=>{
 
 const getUserBySocketId =(room, socketId)=>{
     return rooms[room]?.users.find(user => user.socketId === socketId);
+};
+
+const userExists = (room, username) => {
+    return rooms[room]?.users.some(user => user.username === username) || false;
 };
 
 app.post("/checkDuplicateUsername", (req, res) => {

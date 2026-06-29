@@ -14,6 +14,7 @@ import { IoMdNotifications } from "react-icons/io";
 import { FaCrown } from "react-icons/fa";
 import { MdPersonRemove } from "react-icons/md";
 import { IoMdSettings } from "react-icons/io";
+import { IoChatboxEllipses } from "react-icons/io5";
 
 import { LANGUAGE,BOILERCODE } from "../../../constants";
 import { LANGUAGE_VALUE_TO_NAME } from "../../../constants";
@@ -32,6 +33,7 @@ import Swal from 'sweetalert2'
 import { Tooltip } from "react-tooltip";
 import "react-tooltip/dist/react-tooltip.css";
 import Settings from "./Settings";
+import Chat from "./Chat";
 
 const CodingInterface = () => {
   const [language, setLanguage] = useState("cpp");
@@ -63,6 +65,13 @@ const CodingInterface = () => {
   const [settings,setSettings]=useState(false)
   const [settingsLanguage,setSettingsLanguage]=useState(false)
   const [settingsReset,setSettingsReset]=useState(false)
+  const [settingsRoomLock,setSettingsRoomLock]=useState(false)
+  const [settingsChatEnable,setSettingsChatEnable]=useState(true)
+  const [settingsChatHistory,setSettingsChatHistory]=useState(true)
+
+  const [chatOpen,setChatOpen]=useState(false)
+  const [unreadChats, setUnreadChats]=useState(0)
+  const [messages, setMessages]=useState([]);
   
   const navigate=useNavigate();
   
@@ -108,23 +117,32 @@ const CodingInterface = () => {
     return ()=>socket.off("user-disconnected");
   },[notifications])
 
-  // useEffect(() => {
-  //   socket.on("duplicate-username", () => {
-  //       toast.error("Username already exists in this room");
-  //       navigate("/");
-  //   });
+  useEffect(() => {
+    socket.on("duplicate-username", () => {
+        toast.error("Username already exists in this room");
+        navigate("/");
+    });
 
-  //   return () => {
-  //       socket.off("duplicate-username");
-  //   };
-  // }, []);
+    return () => {
+        socket.off("duplicate-username");
+    };
+  }, []);
   
   useEffect(() => {
     if (!room) return;
     
   const joinRoom=()=>{
-    toast.success(`Joined Room: ${room}`);
-    socket.emit("join-room", {room,username,roomMode});
+    socket.emit("join-room", {room,username,roomMode},(response)=>{
+      if(!response.success){
+        if(response.roomLock) toast.warn("This room is currently locked by the admin. Ask the admin to unlock the room in order to join.");
+        else toast.error("Unable to join the room.");
+
+        navigate("/");
+        return;
+      }
+
+      toast.success(`Joined Room: ${room}`);
+    });
   };
 
   if (socket.connected){
@@ -144,6 +162,9 @@ useEffect(() => {
       setCurrentRoomMode(roomMode);
       setSettingsLanguage(settings.language);
       setSettingsReset(settings.reset);
+      setSettingsRoomLock(settings.roomLock);
+      setSettingsChatEnable(settings.chatEnable);
+      setSettingsChatHistory(settings.chatHistory);
     });
 
   return () => {
@@ -244,12 +265,40 @@ useEffect(()=>{
   socket.on("update-settings",(settings)=>{
     setSettingsLanguage(settings.language);
     setSettingsReset(settings.reset);
+    setSettingsRoomLock(settings.roomLock);
+    setSettingsChatEnable(settings.chatEnable);
+    setSettingsChatHistory(settings.chatHistory);
   })
 
   return ()=>{
     socket.off("update-settings");
   }
 },[])
+
+useEffect(()=>{
+  socket.on("receive-chat",(chat)=>{
+    if(currentRoomMode==="admin" && !settingsChatEnable) return;
+
+    setMessages(prev=>[...prev,chat]);
+
+    if(!chatOpen) setUnreadChats(prev=>prev+1);
+  })
+
+  return ()=>{
+    socket.off("receive-chat");
+  }
+},[chatOpen,settingsChatEnable])
+
+useEffect(()=>{
+  socket.on("chat-history",(chats)=>{
+    if(currentRoomMode==="admin" && !settingsChatHistory) return;
+    setMessages(chats);
+  })
+
+  return ()=>{
+    socket.off("chat-history");
+  }
+},[settingsChatHistory])
 
   const handleChange = (value) => {
     try{
@@ -424,7 +473,8 @@ useEffect(()=>{
     
     <div className={`${theme.background} min-h-screen w-full flex flex-col gap-4 px-4 py-3`}>
 
-      <Settings open={settings} onClose={()=>setSettings(false)} dark={dark} roomMode={currentRoomMode} admin={admin} settingsLanguage={settingsLanguage} settingsReset={settingsReset} />
+      {currentRoomMode==="admin" && <Settings open={settings} onClose={()=>setSettings(false)} dark={dark} roomMode={currentRoomMode} admin={admin} settingsLanguage={settingsLanguage} settingsReset={settingsReset} settingsRoomLock={settingsRoomLock} settingsChatEnable={settingsChatEnable} settingsChatHistory={settingsChatHistory} />}
+      <Chat open={chatOpen} onClose={()=>setChatOpen(false)} dark={dark} messages={messages} username={username} />
 
       <header className={`${theme.background2} ${theme.shadow} border ${theme.border} rounded-xl h-14 px-5 flex justify-between items-center`}>
         <div className="flex gap-10 items-center" >  
@@ -458,6 +508,13 @@ useEffect(()=>{
               <IoCopy size={18} />
             </button>
           </div>
+
+          {currentRoomMode === "admin" && admin && (
+            <div className="bg-amber-100 border border-amber-300 text-amber-800 px-4 py-2 rounded-lg">
+              ⚠️ You are the room admin. Refreshing, closing the tab, or leaving the page may close the room for everyone.
+            </div>
+          )}
+          
         </div>
 
         <div className="flex items-center gap-3" >
@@ -480,14 +537,14 @@ useEffect(()=>{
             </>
           </button>
 
-          <button type="button"
+          {currentRoomMode==="admin" && <button type="button"
             data-tooltip-id="icon-tooltip"
             data-tooltip-content={"Settings"}
             onClick={()=>setSettings(true)}
             className={`px-3 py-2 rounded-lg flex items-center gap-2 ${theme.icon_hover} ${theme.text}`}
           >
             <IoMdSettings size={20} />
-          </button>
+          </button>}
 
           <button type="button"
            data-tooltip-id="icon-tooltip"
@@ -503,7 +560,32 @@ useEffect(()=>{
       <section className="w-full flex-1 flex gap-4 min-h-0">
         
         <div className={`${theme.text} ${theme.background2} ${theme.shadow} rounded-xl p-3 flex flex-col w-[15%] overflow-auto `}>
-          <h5 className="font-bold text-lg mb-3"> Online Users ({users.length}) </h5>
+          <div className="flex items-center justify-between mb-3">
+            <h5 className="font-bold text-lg">
+              Online Users ({users.length})
+            </h5>
+
+            <button
+              type="button"
+              className={`relative p-2 rounded-lg transition ${theme.icon_hover} ${theme.text} cursor-pointer ${(currentRoomMode==="admin" && !settingsChatEnable) && "cursor-not-allowed"}`}
+              onClick={()=>{
+                setChatOpen(true);
+                setUnreadChats(0);
+              }}
+              data-tooltip-id="icon-tooltip"
+              data-tooltip-content={`Open Chats ${(currentRoomMode==="admin" && !settingsChatEnable)?"(Disabled by Admin)":""}`}
+              disabled={currentRoomMode==="admin" && !settingsChatEnable}
+            >
+              <IoChatboxEllipses size={20} />
+
+              {unreadChats > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+                  {unreadChats > 99 ? "99+" : unreadChats}
+                </span>
+              )}
+            </button>
+          </div>
+
           <ul className="">
             {users.map((user)=>{
               return(

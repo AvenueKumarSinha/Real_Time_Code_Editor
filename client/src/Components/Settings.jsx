@@ -9,7 +9,7 @@ import { GiCancel } from "react-icons/gi";
 import { Tooltip } from 'react-tooltip';
 import { socket } from '../socket';
 
-const Settings = ({open, onClose, dark, roomMode, admin, settingsLanguage, settingsReset}) => {
+const Settings = ({open, onClose, dark, roomMode, admin, settingsLanguage, settingsReset, settingsRoomLock, settingsChatEnable, settingsChatHistory}) => {
     if(!open) return null;
 
     const {
@@ -34,11 +34,17 @@ const Settings = ({open, onClose, dark, roomMode, admin, settingsLanguage, setti
 
     const [language,setLanguage]=useState(settingsLanguage)
     const [reset,setReset]=useState(settingsReset)
+    const [roomLock,setRoomLock]=useState(settingsRoomLock)
+    const [chatEnable, setChatEnable]=useState(settingsChatEnable)
+    const [chatHistory, setChatHistory]=useState(settingsChatHistory)
 
     useEffect(()=>{
         setLanguage(settingsLanguage);
         setReset(settingsReset);
-    }, [settingsLanguage, settingsReset]);
+        setRoomLock(settingsRoomLock);
+        setChatEnable(settingsChatEnable);
+        setChatHistory(settingsChatHistory);
+    }, [settingsLanguage, settingsReset, settingsRoomLock, settingsChatEnable, settingsChatHistory]);
 
     const onSubmit=async()=>{
         if(roomMode==="admin" && !admin){
@@ -47,7 +53,7 @@ const Settings = ({open, onClose, dark, roomMode, admin, settingsLanguage, setti
         }
 
         try{
-            socket.emit("update-settings-server",{language:language,reset:reset},(response)=>{
+            socket.emit("update-settings-server",{language:language,reset:reset,roomLock:roomLock,chatEnable:chatEnable,chatHistory:chatHistory},(response)=>{
                 if(!response.success && !response.admin) toast.error("Unable to change the settings!");
                 else if(response.success) toast.success("Settings changed successfully.");
             });
@@ -127,6 +133,84 @@ const Settings = ({open, onClose, dark, roomMode, admin, settingsLanguage, setti
                         checked={reset}
                         onChange={(e) =>
                             setReset(e.target.checked ? true : false)
+                        }
+                        disabled={roomMode==="admin" && !admin}
+                    />
+                </label>
+
+                <label
+                    htmlFor="roomLock"
+                    className={`w-full flex items-center justify-between rounded-xl border ${theme.border} ${theme.background2} p-4 transition hover:border-blue-400 ${(roomMode==="admin" && !admin)?"cursor-not-allowed":"cursor-pointer"}`}
+                >
+                    <div className="flex flex-col">
+                        <p className={`font-semibold ${theme.text}`}>
+                            Room Lock
+                        </p>
+
+                        <p className={`text-sm ${theme.icon_text}`}>
+                            Lock the room so that others cannot join.
+                        </p>
+                    </div>
+
+                    <input
+                        type="checkbox"
+                        id="roomLock"
+                        className={`h-5 w-5 accent-blue-600 ${(roomMode==="admin" && !admin)?"cursor-not-allowed":"cursor-pointer"}`}
+                        checked={roomLock}
+                        onChange={(e) =>
+                            setRoomLock(e.target.checked ? true : false)
+                        }
+                        disabled={roomMode==="admin" && !admin}
+                    />
+                </label>
+
+                <label
+                    htmlFor="chatEnable"
+                    className={`w-full flex items-center justify-between rounded-xl border ${theme.border} ${theme.background2} p-4 transition hover:border-blue-400 ${(roomMode==="admin" && !admin)?"cursor-not-allowed":"cursor-pointer"}`}
+                >
+                    <div className="flex flex-col">
+                        <p className={`font-semibold ${theme.text}`}>
+                            Enable Chatting
+                        </p>
+
+                        <p className={`text-sm ${theme.icon_text}`}>
+                            Users can communicate with each other.
+                        </p>
+                    </div>
+
+                    <input
+                        type="checkbox"
+                        id="chatEnable"
+                        className={`h-5 w-5 accent-blue-600 ${(roomMode==="admin" && !admin)?"cursor-not-allowed":"cursor-pointer"}`}
+                        checked={chatEnable}
+                        onChange={(e) =>
+                            setChatEnable(e.target.checked ? true : false)
+                        }
+                        disabled={roomMode==="admin" && !admin}
+                    />
+                </label>
+
+                <label
+                    htmlFor="chatHistory"
+                    className={`w-full flex items-center justify-between rounded-xl border ${theme.border} ${theme.background2} p-4 transition hover:border-blue-400 ${(roomMode==="admin" && !admin)?"cursor-not-allowed":"cursor-pointer"}`}
+                >
+                    <div className="flex flex-col">
+                        <p className={`font-semibold ${theme.text}`}>
+                            Enable Chat History
+                        </p>
+
+                        <p className={`text-sm ${theme.icon_text}`}>
+                            New users can see previous chats.
+                        </p>
+                    </div>
+
+                    <input
+                        type="checkbox"
+                        id="chatHistory"
+                        className={`h-5 w-5 accent-blue-600 ${(roomMode==="admin" && !admin)?"cursor-not-allowed":"cursor-pointer"}`}
+                        checked={chatHistory}
+                        onChange={(e) =>
+                            setChatHistory(e.target.checked ? true : false)
                         }
                         disabled={roomMode==="admin" && !admin}
                     />
