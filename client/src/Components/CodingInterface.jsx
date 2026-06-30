@@ -15,6 +15,7 @@ import { FaCrown } from "react-icons/fa";
 import { MdPersonRemove } from "react-icons/md";
 import { IoMdSettings } from "react-icons/io";
 import { IoChatboxEllipses } from "react-icons/io5";
+import { MdKeyboard } from "react-icons/md";
 
 import { LANGUAGE,BOILERCODE } from "../../../constants";
 import { LANGUAGE_VALUE_TO_NAME } from "../../../constants";
@@ -34,6 +35,7 @@ import { Tooltip } from "react-tooltip";
 import "react-tooltip/dist/react-tooltip.css";
 import Settings from "./Settings";
 import Chat from "./Chat";
+import Keyboard from "./Keyboard";
 
 const CodingInterface = () => {
   const [language, setLanguage] = useState("cpp");
@@ -58,6 +60,7 @@ const CodingInterface = () => {
   const [reset,setReset]=useState(false)
   const [noCode,setNoCode]=useState(true)
   const[notifications,setNotifications]=useState(true)
+  const [keyboard,setKeyboard]=useState(false)
 
   const [admin,setAdmin]=useState(false)
   const [currentRoomMode,setCurrentRoomMode]=useState("admin")
@@ -120,7 +123,7 @@ const CodingInterface = () => {
   useEffect(() => {
     socket.on("duplicate-username", () => {
         toast.error("Username already exists in this room");
-        navigate("/");
+        // navigate("/");
     });
 
     return () => {
@@ -300,6 +303,115 @@ useEffect(()=>{
   }
 },[settingsChatHistory])
 
+useEffect(()=>{
+  const handleKeyDown=async(e)=>{
+    if(e.ctrlKey && e.shiftKey && e.key.toLowerCase()==="d"){
+      e.preventDefault();
+      setDark(!dark);
+      return;
+    }
+
+    if(currentRoomMode==="admin" && settings){
+      if(e.key==="Escape"){
+        e.preventDefault();
+        setSettings(false);
+        return;
+      }
+
+      return;
+    }
+
+    if(settingsChatEnable && chatOpen){
+      if(e.key==="Escape"){
+        e.preventDefault();
+        setChatOpen(false);
+        return;
+      }
+
+      if(e.ctrlKey && e.shiftKey && e.key.toLowerCase()==="c"){
+        e.preventDefault();
+        
+        try{
+          await navigator.clipboard.writeText(room)
+          if(notifications) toast.success("Room ID Copied")
+        }catch{
+          toast.error("Copy Failed")
+        }
+
+        return;
+      }
+
+      return;
+    }
+
+    if(keyboard){
+      if(e.key==="Escape"){
+        e.preventDefault();
+        setKeyboard(false);
+        return;
+      }
+
+      return;
+    }
+
+    if(e.ctrlKey && e.key==="'"){
+      e.preventDefault();
+      handleRun();
+      return;
+    }
+
+    if(e.ctrlKey && e.key==="."){
+      if(currentRoomMode==="admin" && !admin && !settingsReset) return;
+
+      e.preventDefault();
+      handleReset();
+      return;
+    }
+
+    if(e.ctrlKey && e.shiftKey && e.key.toLowerCase()==="m"){
+      if(currentRoomMode==="admin" && !settingsChatEnable) return;
+
+      e.preventDefault();
+      setChatOpen(true);
+      return;
+    }
+
+    if(e.ctrlKey && e.key==="," && currentRoomMode==="admin"){
+      e.preventDefault();
+      setSettings(true);
+      return;
+    }
+
+    if(e.ctrlKey && e.shiftKey && e.key.toLowerCase()==="c"){
+      e.preventDefault();
+      
+      try{
+        await navigator.clipboard.writeText(room)
+        if(notifications) toast.success("Room ID Copied")
+      }catch{
+        toast.error("Copy Failed")
+      }
+
+      return;
+    }
+
+    if(e.ctrlKey && e.key==="\\"){
+      e.preventDefault();
+      setKeyboard(true);
+      return;
+    }
+
+    if(e.altKey && e.key.toLowerCase()==="n"){
+      e.preventDefault();
+      setNotifications(!notifications);
+      return;
+    }
+  }
+
+  window.addEventListener("keydown", handleKeyDown);
+  return ()=> window.removeEventListener("keydown", handleKeyDown);
+},[code, chatOpen, settings, currentRoomMode, settingsChatEnable, keyboard, dark, notifications, settingsReset, admin])
+
   const handleChange = (value) => {
     try{
       if(isRemote.current){
@@ -475,6 +587,7 @@ useEffect(()=>{
 
       {currentRoomMode==="admin" && <Settings open={settings} onClose={()=>setSettings(false)} dark={dark} roomMode={currentRoomMode} admin={admin} settingsLanguage={settingsLanguage} settingsReset={settingsReset} settingsRoomLock={settingsRoomLock} settingsChatEnable={settingsChatEnable} settingsChatHistory={settingsChatHistory} />}
       <Chat open={chatOpen} onClose={()=>setChatOpen(false)} dark={dark} messages={messages} username={username} />
+      <Keyboard open={keyboard} onClose={()=>setKeyboard(false)} dark={dark} />
 
       <header className={`${theme.background2} ${theme.shadow} border ${theme.border} rounded-xl h-14 px-5 flex justify-between items-center`}>
         <div className="flex gap-10 items-center" >  
@@ -503,7 +616,7 @@ useEffect(()=>{
                 }
               }}
               data-tooltip-id="icon-tooltip"
-              data-tooltip-content={"Copy room ID"}
+              data-tooltip-content={"Copy room ID (Ctrl + Shift + C)"}
             >
               <IoCopy size={18} />
             </button>
@@ -511,7 +624,13 @@ useEffect(()=>{
 
           {currentRoomMode === "admin" && admin && (
             <div className="bg-amber-100 border border-amber-300 text-amber-800 px-4 py-2 rounded-lg">
-              ⚠️ You are the room admin. Refreshing, closing the tab, or leaving the page may close the room for everyone.
+              ⚠️ You are the room admin. Refreshing or closing the tab may close the room for everyone.
+            </div>
+          )}
+
+          {currentRoomMode==="admin" && !admin && settingsRoomLock && (
+            <div className="bg-amber-100 border border-amber-300 text-amber-800 px-4 py-2 rounded-lg">
+              ⚠️ The room is now locked by admin. Refreshing or closing the tab may leave you outside the room.
             </div>
           )}
           
@@ -519,9 +638,19 @@ useEffect(()=>{
 
         <div className="flex items-center gap-3" >
           <button type="button"
+            onClick={()=>setKeyboard(true)}
+            data-tooltip-id="icon-tooltip"
+            data-tooltip-content={`Keyboard Shortcuts (Ctrl + \\)`}
+            className={`px-3 py-2 rounded-lg flex items-center gap-2 ${theme.icon_hover} ${theme.text}`} >
+            <>
+              <MdKeyboard size={20} />
+            </>
+          </button>
+
+          <button type="button"
             onClick={()=>setNotifications(!notifications)}
             data-tooltip-id="icon-tooltip"
-            data-tooltip-content={`${notifications?"Turn OFF Notifications":"Turn ON Notification"}`}
+            data-tooltip-content={`${notifications?"Turn OFF Notifications":"Turn ON Notification"} (alt + N)`}
             className={`px-3 py-2 rounded-lg flex items-center gap-2 ${theme.icon_hover} ${theme.text}`} >
             <>
               {notifications ? <IoMdNotifications size={20} /> : <IoMdNotificationsOff size={20} />}
@@ -530,7 +659,10 @@ useEffect(()=>{
 
           <button type="button" 
             onClick={()=>setDark(!dark)} 
-            className={`px-3 py-2 rounded-lg flex items-center gap-2 ${theme.icon_hover} ${theme.text}`} >
+            className={`px-3 py-2 rounded-lg flex items-center gap-2 ${theme.icon_hover} ${theme.text}`}
+            data-tooltip-id="icon-tooltip"
+            data-tooltip-content={"Ctrl + Shift + D"}
+            >
             <>
               {dark ? <MdDarkMode size={20} /> : <MdLightMode size={20} />}
               <span>{dark ? "Dark" : "Light"}</span>
@@ -539,7 +671,7 @@ useEffect(()=>{
 
           {currentRoomMode==="admin" && <button type="button"
             data-tooltip-id="icon-tooltip"
-            data-tooltip-content={"Settings"}
+            data-tooltip-content={"Settings (Ctrl + ,)"}
             onClick={()=>setSettings(true)}
             className={`px-3 py-2 rounded-lg flex items-center gap-2 ${theme.icon_hover} ${theme.text}`}
           >
@@ -573,7 +705,7 @@ useEffect(()=>{
                 setUnreadChats(0);
               }}
               data-tooltip-id="icon-tooltip"
-              data-tooltip-content={`Open Chats ${(currentRoomMode==="admin" && !settingsChatEnable)?"(Disabled by Admin)":""}`}
+              data-tooltip-content={`Open Chats ${(currentRoomMode==="admin" && !settingsChatEnable)?"(Disabled by Admin)":"(Ctrl + Shift + M)"}`}
               disabled={currentRoomMode==="admin" && !settingsChatEnable}
             >
               <IoChatboxEllipses size={20} />
@@ -642,7 +774,7 @@ useEffect(()=>{
                   {!running && 
                     <button
                      data-tooltip-id="icon-tooltip"
-                     data-tooltip-content={"Run Code"}
+                     data-tooltip-content={"Run Code (Ctrl + ')"}
                      className={`bg-green-500 hover:bg-green-600 text-white rounded-lg px-3 py-2 transition`} onClick={()=>handleRun()} >
                       <FaPlay size={18} />
                     </button>
@@ -652,7 +784,7 @@ useEffect(()=>{
                   }
                   <button
                    data-tooltip-id="icon-tooltip"
-                   data-tooltip-content={`Reset Code ${(currentRoomMode==="admin" && !admin && !settingsReset)?"(Disabled by Admin)":""}`}
+                   data-tooltip-content={`Reset Code ${(currentRoomMode==="admin" && !admin && !settingsReset)?"(Disabled by Admin)":"(Ctrl + .)"}`}
                    className={`bg-amber-500 hover:bg-amber-600 text-white rounded-lg px-3 py-2 transition cursor-pointer ${(currentRoomMode==="admin" && !admin && !settingsReset) && "cursor-not-allowed"} `} onClick={()=>handleReset(BOILERCODE[language])} disabled={currentRoomMode==="admin" && !admin && !settingsReset} ><FaArrowRotateRight size={18} /></button>
                 </div>
             </div>

@@ -76,7 +76,7 @@ const Settings = ({open, onClose, dark, roomMode, admin, settingsLanguage, setti
                     onClick={onClose}
                     className={`px-3 py-2 rounded-lg flex items-center gap-2 ${theme.icon_hover} ${theme.text}`}
                     data-tooltip-id="icon-tooltip"
-                    data-tooltip-content={"Close Settings"}
+                    data-tooltip-content={"Close Settings (Esc)"}
                 >
                     <GiCancel size={20} />
                 </button>
@@ -221,12 +221,14 @@ const Settings = ({open, onClose, dark, roomMode, admin, settingsLanguage, setti
                         <button
                             onClick={onClose}
                             className={`px-3 py-2 rounded-lg flex items-center gap-2 ${!dark?"hover:bg-slate-300 bg-slate-200 text-white":"hover:bg-slate-600 bg-slate-500"} `}
+                            type='button'
                         >
                             Cancel
                         </button>
 
                         <button
                             className={`px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600 bg-blue-500 text-white `}
+                            type='submit'
                         >
                             Save
                         </button>

@@ -51,6 +51,13 @@ const Chat = ({open, onClose, dark, messages, username}) => {
         });
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();   
+            handleSubmit(onSubmit)();
+        }
+    };
+
     useEffect(()=>{
         scrollToBottom();
     }, [messages]);
@@ -71,7 +78,7 @@ const Chat = ({open, onClose, dark, messages, username}) => {
                 onClick={onClose}
                 className={`p-2 rounded-lg ${theme.icon_hover} ${theme.text}`}
                 data-tooltip-id="icon-tooltip"
-                data-tooltip-content="Close Chat"
+                data-tooltip-content="Close Chat (Esc)"
             >
                 <GiCancel size={20} />
             </button>
@@ -133,13 +140,13 @@ const Chat = ({open, onClose, dark, messages, username}) => {
             className="mt-auto pt-4 border-t border-slate-300"
         >
             <div className="flex gap-3 items-center">
-                <input
+                <textarea
                     value={chat}
-                    onChange={(e)=>setChat(e.target.value)}
-                    type="text"
-                    placeholder="Type a message..."
-                    className="flex-1 h-12 px-4 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
-                    required
+                    onChange={(e) => setChat(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type here..."
+                    rows={3}
+                    className="w-full resize-none rounded-xl border border-slate-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition scrollbar-none [&::-webkit-scrollbar]:hidden"
                 />
 
                 <button
