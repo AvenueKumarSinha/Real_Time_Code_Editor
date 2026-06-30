@@ -67,7 +67,7 @@ const Chat = ({open, onClose, dark, messages, username}) => {
     }, [open]);
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm`} >
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm`} onClick={(e)=>{if(e.target===e.currentTarget) onClose()}} >
       <div className={`w-[700px] max-w-[95vw] h-[80vh] max-h-[850px] rounded-2xl ${theme.background} shadow-2xl border ${theme.border} p-6 ${theme.text} flex flex-col`} >
         <div className="flex items-center justify-between mb-5">
             <h2 className="text-2xl font-bold">
@@ -137,7 +137,7 @@ const Chat = ({open, onClose, dark, messages, username}) => {
 
         <form
             onSubmit={handleSubmit(onSubmit)}
-            className="mt-auto pt-4 border-t border-slate-300"
+            className="mt-auto pt-4"
         >
             <div className="flex gap-3 items-center">
                 <textarea
@@ -146,7 +146,8 @@ const Chat = ({open, onClose, dark, messages, username}) => {
                     onKeyDown={handleKeyDown}
                     placeholder="Type here..."
                     rows={3}
-                    className="w-full resize-none rounded-xl border border-slate-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition scrollbar-none [&::-webkit-scrollbar]:hidden"
+                    className={`w-full resize-none rounded-xl border border-slate-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition scrollbar-none [&::-webkit-scrollbar]:hidden ${theme.background2} `}
+                    required
                 />
 
                 <button

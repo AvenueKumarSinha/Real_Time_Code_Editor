@@ -54,7 +54,7 @@ const Keyboard = ({open, onClose, dark}) => {
     ];
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm`} >
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm`} onClick={(e)=>{if(e.target===e.currentTarget) onClose()}} >
         <div className={`w-[720px] max-w-[95vw] h-[80vh] max-h-[850px] rounded-2xl ${theme.background} shadow-2xl border ${theme.border} flex flex-col overflow-hidden`} >
             <div className={`flex items-center justify-between border-b ${theme.border} ${theme.text} px-6 py-5`} >
                 <h2 className="text-2xl font-bold">
@@ -71,7 +71,7 @@ const Keyboard = ({open, onClose, dark}) => {
                 </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-8">
+            <div className={`flex-1 overflow-y-auto px-6 py-5 space-y-8 ${theme.background} `}>
                 {shortcuts.map((section)=>(
                     <div key={section.title}>
                         <h3 className={`text-lg font-semibold mb-4 ${theme.icon_text}`}>{section.title}</h3>
@@ -80,7 +80,7 @@ const Keyboard = ({open, onClose, dark}) => {
                             {section.items.map(([key,action],index)=>(
                                 <div
                                     key={key}
-                                    className={`flex justify-between items-center px-5 py-4
+                                    className={`flex justify-between items-center px-5 py-4 ${theme.background2}
                                     ${
                                         index!==section.items.length-1
                                         ? `border-b ${theme.border}`
@@ -94,7 +94,7 @@ const Keyboard = ({open, onClose, dark}) => {
                                     {key.split(" + ").map((k)=>(
                                         <kbd
                                             key={k}
-                                            className={`px-3 py-1 rounded-md border ${theme.border} ${theme.background2} ${theme.text} font-mono text-sm shadow-sm`}
+                                            className={`px-3 py-1 rounded-md border ${theme.border} ${theme.background} ${theme.text} font-mono text-sm shadow-sm`}
                                         >
                                             {k}
                                         </kbd>

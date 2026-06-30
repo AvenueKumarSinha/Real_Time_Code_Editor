@@ -65,7 +65,7 @@ const Settings = ({open, onClose, dark, roomMode, admin, settingsLanguage, setti
     }
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm`} >
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm`} onClick={(e)=>{if(e.target===e.currentTarget) onClose()}} >
         <div className={`w-[500px] max-w-[90vw] rounded-2xl ${theme.background} shadow-2xl border ${theme.border} p-6 ${theme.text} `} >
             <div className={`flex items-center justify-between mb-6`} >
                 <h2 className={`text-2xl font-bold ${theme.text} `}>

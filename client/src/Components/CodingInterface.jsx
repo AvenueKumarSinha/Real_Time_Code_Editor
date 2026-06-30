@@ -364,7 +364,7 @@ useEffect(()=>{
       if(currentRoomMode==="admin" && !admin && !settingsReset) return;
 
       e.preventDefault();
-      handleReset();
+      handleReset(BOILERCODE[language]);
       return;
     }
 
