@@ -757,6 +757,12 @@ useEffect(()=>{
                     ))}
                 </select>
 
+                {seeOutputCode && 
+                  <div className="bg-blue-100 border border-blue-300 text-blue-800 px-4 py-2 rounded-lg">
+                    You are viewing the last executed code. Click <button type="button" onClick={()=>setSeeOutputCode(false)} className={`font-bold`} >here</button> to exit.
+                  </div>
+                }
+
                 <div className="flex items-center gap-2" >
                   <button className={`${theme.icon_text} ${theme.icon_hover} p-2 rounded-lg transition`} onClick={async()=>{
                     try{
@@ -789,11 +795,24 @@ useEffect(()=>{
                 </div>
             </div>
 
-          {seeOutputCode && 
-            <div className={`${theme.background} ${theme.text} border ${theme.border} h-[70%] w-[100%] relative overflow-auto `} >
-              <button type="button" onClick={()=>setSeeOutputCode(false)} className={`${theme.icon_text} ${theme.icon_hover} absolute right-[0.5%] top-[2%]`} ><GiCancel size={18} /></button>
-              <pre className="p-[1%]" >{lastOutputCode}</pre>
-            </div>
+          {seeOutputCode && <>
+                <Editor
+                  height={"70%"}
+                  width={"100%"}
+                  theme={dark ? "vs-dark" : "light"}
+                  value={lastOutputCode}
+                  language={language}
+                  options={{
+                      fontSize:18,
+                      minimap:{enabled:false},
+                      wordWrap: "on",
+                      scrollBeyondLastLine: false,
+                      automaticLayout: true,
+                      readOnly: true,
+                      domReadOnly: true
+                  }}  
+                /> 
+              </>            
           }
 
           {!seeOutputCode &&     
