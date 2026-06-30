@@ -123,7 +123,7 @@ const CodingInterface = () => {
   useEffect(() => {
     socket.on("duplicate-username", () => {
         toast.error("Username already exists in this room");
-        // navigate("/");
+        navigate("/");
     });
 
     return () => {
