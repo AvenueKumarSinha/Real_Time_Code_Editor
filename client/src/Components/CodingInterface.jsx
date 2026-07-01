@@ -583,7 +583,7 @@ useEffect(()=>{
 
   return (
     
-    <div className={`${theme.background} min-h-screen w-full flex flex-col gap-4 px-4 py-3`}>
+    <div className={`${theme.background} h-screen w-full flex flex-col gap-4 px-4 py-3 overflow-hidden`}>
 
       {currentRoomMode==="admin" && <Settings open={settings} onClose={()=>setSettings(false)} dark={dark} roomMode={currentRoomMode} admin={admin} settingsLanguage={settingsLanguage} settingsReset={settingsReset} settingsRoomLock={settingsRoomLock} settingsChatEnable={settingsChatEnable} settingsChatHistory={settingsChatHistory} />}
       <Chat open={chatOpen} onClose={()=>setChatOpen(false)} dark={dark} messages={messages} username={username} />
@@ -745,7 +745,7 @@ useEffect(()=>{
         </div>
 
 
-        <main className="flex-1 flex flex-col min-h-0">
+        <main className="flex-1 min-h-0 flex flex-col overflow-hidden">
 
             <div className={`${theme.background2} ${theme.shadow} ${theme.text} rounded-t-xl px-4 h-14 flex items-center justify-between ` } >
                 <select className={`cursor-pointer px-3 py-2 rounded-lg border ${theme.background} ${theme.border} ${theme.text} bg-transparent`} value={language} onChange={(e)=>{
@@ -795,9 +795,9 @@ useEffect(()=>{
                 </div>
             </div>
 
-          {seeOutputCode && <>
+          {seeOutputCode && <div className="flex-1 min-h-0" >
                 <Editor
-                  height={"70%"}
+                  height={"100%"}
                   width={"100%"}
                   theme={dark ? "vs-dark" : "light"}
                   value={lastOutputCode}
@@ -812,28 +812,29 @@ useEffect(()=>{
                       domReadOnly: true
                   }}  
                 /> 
-              </>            
+              </div>            
           }
 
-          {!seeOutputCode &&     
-            <Editor
-              height={"70%"}
-              width={"100%"}
-              theme={dark ? "vs-dark" : "light"}
-              value={code}
-              onChange={handleChange}
-              language={language}
-              options={{
-                  fontSize:18,
-                  minimap:{enabled:false},
-                  wordWrap: "on",
-                  scrollBeyondLastLine: false,
-                  automaticLayout: true
-              }}  
-            />
+          {!seeOutputCode && <div className="flex-1 min-h-0" >
+              <Editor
+                height={"100%"}
+                width={"100%"}
+                theme={dark ? "vs-dark" : "light"}
+                value={code}
+                onChange={handleChange}
+                language={language}
+                options={{
+                    fontSize:18,
+                    minimap:{enabled:false},
+                    wordWrap: "on",
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true
+                }}  
+              />
+            </div>
           }
 
-            <div className="h-[220px] w-full flex" >
+            <div className="min-h-[180px] h-[30vh] max-h-[260px] w-full flex" >
               <div className={`${theme.background2} ${theme.text} border ${theme.border} rounded-bl-xl p-3 h-full w-1/2`} >
                 <h5 className="text-center font-bold" >INPUT</h5>
                 <textarea 

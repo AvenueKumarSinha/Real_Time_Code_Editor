@@ -23,7 +23,6 @@ const HomePage = () => {
 
   const onSubmit = async(data) => {
     if(createRoom){
-      console.log(admin)
       let tries=0;
       while(true){
           tries++;
@@ -90,15 +89,15 @@ const HomePage = () => {
   const[createRoom,setCreateRoom]=useState(false)
 
   return (
-    <div className="bg-slate-50 h-screen w-screen flex flex-col">
-      <div className="mt-20 flex flex-col items-center gap-3" >
-        <h1 className="text-6xl font-extrabold text-slate-900">Real Time Code Editor</h1>
-        <h5 className="text-xl text-slate-500 font-medium">Collaborate. Code. Execute.</h5>
+    <div className="bg-slate-50 min-h-screen w-full flex flex-col">
+      <div className="pt-20 flex flex-col items-center gap-3">
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900">Real Time Code Editor</h1>
+        <h5 className="text-lg md:text-xl text-slate-500 font-medium">Collaborate. Code. Execute.</h5>
       </div>
 
         <form
             onSubmit={handleSubmit(onSubmit)}
-            className="bg-white shadow-xl border border-slate-200 w-[500px] max-w-[90vw] p-10 rounded-2xl mx-auto my-auto flex flex-col justify-center items-center gap-6"
+            className="bg-white shadow-xl border border-slate-200 w-full max-w-md p-10 rounded-2xl mx-auto my-auto flex flex-col justify-center items-center gap-6"
         >
             <div className="text-center mb-2">
               <h2 className="text-2xl font-bold text-slate-900">
