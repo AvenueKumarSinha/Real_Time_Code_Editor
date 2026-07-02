@@ -152,7 +152,7 @@ const Chat = ({open, onClose, dark, messages, username}) => {
 
                 <button
                     type="submit"
-                    className="h-12 px-6 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium transition whitespace-nowrap"
+                    className="h-11 md:h-12 px-6 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium transition whitespace-nowrap"
                 >
                     Send
                 </button>

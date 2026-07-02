@@ -36,6 +36,7 @@ import "react-tooltip/dist/react-tooltip.css";
 import Settings from "./Settings";
 import Chat from "./Chat";
 import Keyboard from "./Keyboard";
+import DesktopRequired from "./DesktopRequired";
 
 const CodingInterface = () => {
   const [language, setLanguage] = useState("cpp");
@@ -77,6 +78,13 @@ const CodingInterface = () => {
   const [messages, setMessages]=useState([]);
   
   const navigate=useNavigate();
+
+  const MIN_WIDTH = 1090;
+  const MIN_HEIGHT = 650;
+
+  if (window.innerWidth < MIN_WIDTH || window.innerHeight < MIN_HEIGHT) {
+      return <DesktopRequired />;
+  }
   
   useEffect(()=>{
     if(!username){
@@ -373,6 +381,7 @@ useEffect(()=>{
 
       e.preventDefault();
       setChatOpen(true);
+      setUnreadChats(0);
       return;
     }
 
@@ -410,7 +419,7 @@ useEffect(()=>{
 
   window.addEventListener("keydown", handleKeyDown);
   return ()=> window.removeEventListener("keydown", handleKeyDown);
-},[code, chatOpen, settings, currentRoomMode, settingsChatEnable, keyboard, dark, notifications, settingsReset, admin])
+},[code, chatOpen, settings, currentRoomMode, settingsChatEnable, keyboard, dark, notifications, settingsReset, admin, unreadChats])
 
   const handleChange = (value) => {
     try{
@@ -623,14 +632,22 @@ useEffect(()=>{
           </div>
 
           {currentRoomMode === "admin" && admin && (
-            <div className="bg-amber-100 border border-amber-300 text-amber-800 px-4 py-2 rounded-lg">
-              ⚠️ You are the room admin. Refreshing or closing the tab may close the room for everyone.
+            <div 
+              className="bg-amber-100 border border-amber-300 text-amber-800 px-4 py-2 rounded-lg"
+              data-tooltip-id="warning-tooltip"
+              data-tooltip-content={"Refreshing or closing the tab may close the room for everyone."}
+            >
+              ⚠️ You are the admin.
             </div>
           )}
 
           {currentRoomMode==="admin" && !admin && settingsRoomLock && (
-            <div className="bg-amber-100 border border-amber-300 text-amber-800 px-4 py-2 rounded-lg">
-              ⚠️ The room is now locked by admin. Refreshing or closing the tab may leave you outside the room.
+            <div 
+              className="bg-amber-100 border border-amber-300 text-amber-800 px-4 py-2 rounded-lg"
+              data-tooltip-id="warning-tooltip"
+              data-tooltip-content={"The room is now locked by admin. Refreshing or closing the tab may leave you outside the room."}
+            >
+              ⚠️ The room is locked.
             </div>
           )}
           
@@ -693,7 +710,7 @@ useEffect(()=>{
         
         <div className={`${theme.text} ${theme.background2} ${theme.shadow} rounded-xl p-3 flex flex-col w-[15%] overflow-auto `}>
           <div className="flex items-center justify-between mb-3">
-            <h5 className="font-bold text-lg">
+            <h5 className="font-bold text-base md:text-lg">
               Online Users ({users.length})
             </h5>
 
@@ -873,6 +890,23 @@ useEffect(()=>{
           backgroundColor: theme.tooltip_background,
           color: theme.tooltip_color,
           border: theme.tooltip_border,
+          fontSize: "14px",
+          padding: "4px 8px",
+          borderRadius: "6px",
+          zIndex: 9999,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+        }}
+      />
+
+      <Tooltip 
+        id="warning-tooltip"
+        place="bottom"
+        opacity={1}
+        delayShow={500}
+        style={{
+          backgroundColor: "#fef3c7",
+          color: "#92400E",
+          border: "#fcd34d",
           fontSize: "14px",
           padding: "4px 8px",
           borderRadius: "6px",

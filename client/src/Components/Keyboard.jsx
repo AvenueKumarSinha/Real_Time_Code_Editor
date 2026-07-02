@@ -74,7 +74,7 @@ const Keyboard = ({open, onClose, dark}) => {
             <div className={`flex-1 overflow-y-auto px-6 py-5 space-y-8 ${theme.background} `}>
                 {shortcuts.map((section)=>(
                     <div key={section.title}>
-                        <h3 className={`text-lg font-semibold mb-4 ${theme.icon_text}`}>{section.title}</h3>
+                        <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.icon_text}`}>{section.title}</h3>
 
                         <div className={`rounded-xl border ${theme.border} overflow-hidden`}>
                             {section.items.map(([key,action],index)=>(

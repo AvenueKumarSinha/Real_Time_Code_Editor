@@ -4,9 +4,17 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 import { socket } from "../socket";
 import { toast } from "react-toastify";
+import DesktopRequired from "./DesktopRequired";
 
 const HomePage = () => {
   const navigate=useNavigate()
+
+  const MIN_WIDTH = 1090;
+  const MIN_HEIGHT = 650;
+
+  if (window.innerWidth < MIN_WIDTH || window.innerHeight < MIN_HEIGHT) {
+      return <DesktopRequired />;
+  }
 
   const {
     register,
@@ -92,12 +100,12 @@ const HomePage = () => {
     <div className="bg-slate-50 min-h-screen w-full flex flex-col">
       <div className="pt-20 flex flex-col items-center gap-3">
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900">Real Time Code Editor</h1>
-        <h5 className="text-lg md:text-xl text-slate-500 font-medium">Collaborate. Code. Execute.</h5>
+        <h5 className="text-base md:text-lg lg:text-xl text-slate-500 font-medium">Collaborate. Code. Execute.</h5>
       </div>
 
         <form
             onSubmit={handleSubmit(onSubmit)}
-            className="bg-white shadow-xl border border-slate-200 w-full max-w-md p-10 rounded-2xl mx-auto my-auto flex flex-col justify-center items-center gap-6"
+            className="bg-white shadow-xl border border-slate-200 w-full max-w-md p-5 md:p-8 lg:p-10 rounded-2xl mx-auto my-auto flex flex-col justify-center items-center gap-6"
         >
             <div className="text-center mb-2">
               <h2 className="text-2xl font-bold text-slate-900">
@@ -113,7 +121,7 @@ const HomePage = () => {
             {...register("username")}
             type="text"
             placeholder="Please enter your username"
-            className="w-full h-12 px-4 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+            className="w-full h-11 md:h-12 px-4 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
             required
             />
 
@@ -146,7 +154,7 @@ const HomePage = () => {
                   <button
                   disabled={isSubmitting}
                   type="submit"
-                  className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition"
+                  className="w-full h-11 md:h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition"
                   >
                   {isSubmitting ? "Creating..." : "Create Room"}
                   </button>
@@ -164,10 +172,10 @@ const HomePage = () => {
                   <button
                   disabled={isSubmitting}
                   type="button"
-                  className="w-full h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold transition"
+                  className="w-full h-11 md:h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold transition"
                   onClick={()=>{setCreateRoom(false)}}
                   >
-                  {isSubmitting ? "Joining..." : "Join Room"}
+                    Join Room
                   </button>
                 </>
             }
@@ -178,13 +186,13 @@ const HomePage = () => {
                 {...register("room")}
                 type="text"
                 placeholder="Please enter the room id"
-                className="w-full h-12 px-4 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                className="w-full h-11 md:h-12 px-4 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
                 required
                 />
                 <button
                 disabled={isSubmitting}
                 type="submit"
-                className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition"
+                className="w-full h-11 md:h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition"
                 >
                 {isSubmitting ? "Joining..." : "Join Room"}
                 </button>
@@ -202,10 +210,10 @@ const HomePage = () => {
                 <button
                 disabled={isSubmitting}
                 type="button"
-                className="w-full h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold transition"
+                className="w-full h-11 md:h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold transition"
                 onClick={()=>{setCreateRoom(true)}}
                 >
-                {isSubmitting ? "Creating..." : "Create Room"}
+                  Create Room
                 </button>
               </>
             }
