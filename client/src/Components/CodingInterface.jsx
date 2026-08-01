@@ -16,6 +16,7 @@ import { MdPersonRemove } from "react-icons/md";
 import { IoMdSettings } from "react-icons/io";
 import { IoChatboxEllipses } from "react-icons/io5";
 import { MdKeyboard } from "react-icons/md";
+import { RiRobot2Fill } from "react-icons/ri";
 
 import { LANGUAGE,BOILERCODE } from "../../../constants";
 import { LANGUAGE_VALUE_TO_NAME } from "../../../constants";
@@ -37,6 +38,7 @@ import Settings from "./Settings";
 import Chat from "./Chat";
 import Keyboard from "./Keyboard";
 import DesktopRequired from "./DesktopRequired";
+import AI from "./AI";
 
 const CodingInterface = () => {
   const [language, setLanguage] = useState("cpp");
@@ -76,6 +78,9 @@ const CodingInterface = () => {
   const [chatOpen,setChatOpen]=useState(false)
   const [unreadChats, setUnreadChats]=useState(0)
   const [messages, setMessages]=useState([]);
+
+  const [ai,setAi]=useState(false)
+  const [aiChats, setAiChats]=useState([])
   
   const navigate=useNavigate();
 
@@ -128,16 +133,16 @@ const CodingInterface = () => {
     return ()=>socket.off("user-disconnected");
   },[notifications])
 
-  useEffect(() => {
-    socket.on("duplicate-username", () => {
-        toast.error("Username already exists in this room");
-        navigate("/");
-    });
+  // useEffect(() => {
+  //   socket.on("duplicate-username", () => {
+  //       toast.error("Username already exists in this room");
+  //       navigate("/");
+  //   });
 
-    return () => {
-        socket.off("duplicate-username");
-    };
-  }, []);
+  //   return () => {
+  //       socket.off("duplicate-username");
+  //   };
+  // }, []);
   
   useEffect(() => {
     if (!room) return;
@@ -301,6 +306,21 @@ useEffect(()=>{
 },[chatOpen,settingsChatEnable])
 
 useEffect(()=>{
+  socket.on("receive-ai-prompt",({prompt,timestamp})=>{
+    setAiChats(prev=>[...prev,{content: prompt, timestamp: timestamp, reply: false}]);
+  })
+
+  socket.on("receive-ai-answer",({answer,timestamp})=>{
+    setAiChats(prev=>[...prev,{content: answer, timestamp: timestamp, reply: true}]);
+  })
+  
+  return ()=>{
+    socket.off("receive-ai-prompt");
+    socket.off("receive-ai-answer");
+  }
+},[aiChats])
+
+useEffect(()=>{
   socket.on("chat-history",(chats)=>{
     if(currentRoomMode==="admin" && !settingsChatHistory) return;
     setMessages(chats);
@@ -327,6 +347,14 @@ useEffect(()=>{
       }
 
       return;
+    }
+
+    if(ai){
+      if(e.key==="Escape"){
+        e.preventDefault();
+        setAi(false);
+        return;
+      }
     }
 
     if(settingsChatEnable && chatOpen){
@@ -415,11 +443,17 @@ useEffect(()=>{
       setNotifications(!notifications);
       return;
     }
+
+    if(e.ctrlKey && e.shiftKey && e.key.toLowerCase()==="i"){
+      e.preventDefault();
+      setAi(true);
+      return;
+    }
   }
 
   window.addEventListener("keydown", handleKeyDown);
   return ()=> window.removeEventListener("keydown", handleKeyDown);
-},[code, chatOpen, settings, currentRoomMode, settingsChatEnable, keyboard, dark, notifications, settingsReset, admin, unreadChats])
+},[code, chatOpen, settings, currentRoomMode, settingsChatEnable, keyboard, dark, notifications, settingsReset, admin, unreadChats, ai])
 
   const handleChange = (value) => {
     try{
@@ -597,6 +631,7 @@ useEffect(()=>{
       {currentRoomMode==="admin" && <Settings open={settings} onClose={()=>setSettings(false)} dark={dark} roomMode={currentRoomMode} admin={admin} settingsLanguage={settingsLanguage} settingsReset={settingsReset} settingsRoomLock={settingsRoomLock} settingsChatEnable={settingsChatEnable} settingsChatHistory={settingsChatHistory} />}
       <Chat open={chatOpen} onClose={()=>setChatOpen(false)} dark={dark} messages={messages} username={username} />
       <Keyboard open={keyboard} onClose={()=>setKeyboard(false)} dark={dark} />
+      <AI open={ai} onClose={()=>setAi(false)} dark={dark} aiChats={aiChats} />
 
       <header className={`${theme.background2} ${theme.shadow} border ${theme.border} rounded-xl h-14 px-5 flex justify-between items-center`}>
         <div className="flex gap-10 items-center" >  
@@ -654,6 +689,16 @@ useEffect(()=>{
         </div>
 
         <div className="flex items-center gap-3" >
+          <button type="button"
+            onClick={()=>setAi(true)}
+            data-tooltip-id="icon-tooltip"
+            data-tooltip-content={`AI (Ctrl + A + I)`}
+            className={`px-3 py-2 rounded-lg flex items-center gap-2 ${theme.icon_hover} ${theme.text}`} >
+            <>
+              <RiRobot2Fill size={20} />
+            </>
+          </button>
+
           <button type="button"
             onClick={()=>setKeyboard(true)}
             data-tooltip-id="icon-tooltip"

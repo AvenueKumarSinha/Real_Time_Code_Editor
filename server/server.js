@@ -9,6 +9,8 @@ import e from "express"
 import { LANGUAGE_ID } from "../constants.js"
 import { settings } from "cluster"
 
+import { GoogleGenAI } from "@google/genai"
+
 dotenv.config()
 
 const app=express()
@@ -27,6 +29,9 @@ const io=new Server(server,{
         credentials:true
     }
 })
+
+const ai=new GoogleGenAI({apiKey:process.env.GEMINI_API_KEY})
+const ai_model=process.env.AI_MODEL;
 
 const roomState = {}; // { roomId: { code, language } }
 const rooms={}; // {roomsid:{mode,users:[socketid,username,admin],settings:{language:false,...},chats:[]}
@@ -258,6 +263,25 @@ io.on("connection",(socket)=>{
         rooms[room].chats.push(chat);
 
         io.to(room).emit("receive-chat",chat);
+    })
+
+    socket.on("send-prompt", async({prompt}, callback)=>{
+        try{
+            const response= await ai.models.generateContent({
+                model: ai_model,
+                contents: prompt
+            })
+
+            const answer=response.text;
+            const timestamp=Date.now();
+
+            io.to(socket.id).emit("receive-ai-prompt", {prompt: prompt, timestamp: timestamp})
+            io.to(socket.id).emit("receive-ai-answer", {answer: answer, timestamp: timestamp})
+
+            return callback({error:false, answer: answer})
+        }catch(err){
+            return callback({error: true})
+        }
     })
 })
 

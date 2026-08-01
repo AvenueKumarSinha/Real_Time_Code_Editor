@@ -27,6 +27,7 @@ const Keyboard = ({open, onClose, dark}) => {
                 ["Ctrl + \\", "Open Keyboard Shortcuts"],
                 ["Esc", "Close Current Dialog Box"],
                 ["Ctrl + Shift + D", "Toggle Theme"],
+                ["Ctrl + Shift + I", "Ask AI"],
             ],
         },
         {
